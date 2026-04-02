@@ -46,6 +46,88 @@ This is a Galaxy collection (namespace `david_igou`, name `devhost`). `galaxy.ym
 
 `playbooks/site.yml` is the entry point — runs `host_prep` → `packages` → `podman_rootless` in order.
 
+## Testing
+
+### Running molecule
+
+```bash
+# Run a specific scenario (host_prep, packages, default, podman_rootless)
+molecule test -s host_prep
+
+# Converge only (skip destroy — useful during development)
+molecule converge -s host_prep
+
+# Run verify step against an already-converged instance
+molecule verify -s host_prep
+```
+
+Molecule scenarios live in `extensions/molecule/<scenario>/`. Each scenario has `converge.yml`, `verify.yml`, and `molecule.yml`. The provisioner files in `extensions/molecule/provisioners/podman/` are shared across scenarios.
+
+### Smoke testing
+
+Every molecule scenario must include a `verify.yml` that smoke-tests the converged state. Smoke tests should:
+
+- Verify services are functioning after deployment (check ports, sockets, CLI commands).
+- Use `ansible.builtin.stat` + `ansible.builtin.assert` for files and directories.
+- Use `ansible.builtin.command` + `changed_when: false` for CLI health checks.
+- Assert on specific expected values, not just existence.
+- Fail fast — if a smoke test fails, the scenario fails.
+- Finish with a `debug` task summarizing what was verified.
+
+Do **not** remove the `verify` step from `molecule.yml` test sequences.
+
+### CI scenarios
+
+CI runs `host_prep` and `packages` scenarios. `default` and `podman_rootless` are available locally but excluded from CI.
+
+## Coding standards
+
+These are derived from the [upstream agents doc](https://raw.githubusercontent.com/ansible/ansible-creator/refs/heads/main/docs/agents.md). Run `ansible-lint` to enforce most of these automatically.
+
+### YAML formatting
+
+- Use two-space indentation.
+- Use `.yml` extension for all YAML files.
+- Use double quotes for YAML strings; use single quotes for Jinja2 expressions.
+- Use `true`/`false` for booleans, never `yes`/`no` or `True`/`False`.
+- Spell out task arguments in YAML style, not `key=value` format.
+- Use `>-` (not `>`) for folded scalars; break long `when` conditions into lists.
+- Keep lines under 160 characters.
+- Start YAML files with `---`.
+
+### Fully qualified collection names
+
+Always use FQCNs for all modules and plugins: `ansible.builtin.copy`, not `copy`. Use `ansible.builtin` for core modules. Avoid the `collections` keyword.
+
+### Task naming
+
+- All tasks, plays, and blocks must have a `name`.
+- Write names in imperative form, starting with an uppercase letter (e.g., "Install podman packages").
+- Do not use variables in play names (they don't expand properly).
+- Task names should be unique within a play.
+
+### Module and command usage
+
+- Prefer specific modules over `command` or `shell` (e.g., use `ansible.builtin.package` instead of `apt`/`dnf` via shell).
+- When `command`/`shell` is unavoidable, always set `changed_when` (and/or `creates`/`removes`).
+- Add a `# noqa` comment with justification when suppressing lint rules for command usage.
+- Always explicitly specify `state` in modules — do not rely on defaults.
+
+### Idempotency
+
+- All tasks must produce no changes on a second run.
+- Use `changed_when` with `command`/`shell` to accurately reflect change state.
+- Support check mode (`--check`) — tasks should not fail in check mode.
+- Use handlers (via `notify`) instead of `when: foo_result is changed`.
+
+### Role design
+
+- Define role arguments in `meta/argument_specs.yml` for validation.
+- All external arguments should have defaults in `defaults/main.yml`.
+- Use `vars/main.yml` only for constants and magic values (high precedence).
+- Do not override role defaults with `set_fact`.
+- Keep roles focused on a single outcome with limited scope.
+
 ## Upstream agent guidance
 
 Per `AGENTS.md`, follow practices from the [ansible-creator agents doc](https://raw.githubusercontent.com/ansible/ansible-creator/refs/heads/main/docs/agents.md).
