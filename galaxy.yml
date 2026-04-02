@@ -34,3 +34,6 @@ build_ignore:
   - .isort.cfg
   - tests
   - renovate.json
+  - .claude
+  - .cursor
+  - extensions

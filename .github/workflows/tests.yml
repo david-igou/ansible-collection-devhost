@@ -62,6 +62,7 @@ jobs:
           python -c "assert 'failure' not in
           set([
           '${{ needs.changelog.result }}',
+          '${{ needs.build-import.result }}',
           '${{ needs.sanity.result }}',
           '${{ needs.ansible-lint.result }}',
           '${{ needs.molecule.result }}',

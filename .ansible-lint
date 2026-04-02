@@ -8,3 +8,4 @@ exclude_paths:
   - tests/templated_role_example
   - .ansible/
   - tests/
+  - extensions/molecule/provisioners/
