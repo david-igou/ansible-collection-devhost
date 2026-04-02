@@ -1,11 +1,11 @@
 ---
 profile: production
 
+skip_list:
+  - galaxy[no-changelog]
+
 exclude_paths:
   - .cache/
   - .github/
-  - changelogs/
-  - tests/templated_role_example
   - .ansible/
-  - tests/
   - extensions/molecule/provisioners/

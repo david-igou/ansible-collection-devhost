@@ -21,7 +21,7 @@ ansible-playbook playbooks/site.yml -c local --check --diff -K
 # Run the full provisioning playbook
 ansible-playbook david_igou.devhost.site -c local -K
 
-# Pre-commit hooks (prettier, flake8, isort, black, trailing whitespace)
+# Pre-commit hooks (prettier, trailing whitespace, end-of-file)
 pre-commit run --all-files
 ```
 

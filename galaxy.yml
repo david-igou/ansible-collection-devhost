@@ -31,9 +31,8 @@ build_ignore:
   - .devcontainer
   - .pre-commit-config.yaml
   - .prettierignore
-  - .isort.cfg
-  - tests
   - renovate.json
+  - tox-ansible.ini
   - .claude
   - .cursor
   - extensions
