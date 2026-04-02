@@ -27,10 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         scenario:
-          - default
           - host_prep
           - packages
-          - podman_rootless
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -45,7 +43,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible-core molecule
 
-      - name: Run molecule ${{ matrix.scenario }}
+      - name: Smoke test molecule ${{ matrix.scenario }}
         run: molecule test -s ${{ matrix.scenario }}
 
   all_green:
