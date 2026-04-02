@@ -5,6 +5,10 @@
   become: false
 
   tasks:
+    - name: Load packages role defaults
+      ansible.builtin.include_vars:
+        file: ../../../roles/packages/defaults/main.yml
+
     - name: Check podman is installed
       ansible.builtin.command:
         cmd: podman --version
@@ -35,6 +39,54 @@
       register: _make
       changed_when: false
 
+    - name: Check kubectl is installed
+      ansible.builtin.command:
+        cmd: kubectl version --client -o json
+      register: _kubectl
+      changed_when: false
+
+    - name: Assert kubectl version
+      ansible.builtin.assert:
+        that:
+          - packages_kubectl_version in _kubectl.stdout
+        fail_msg: "kubectl version mismatch: expected {{ packages_kubectl_version }}"
+
+    - name: Check helm is installed
+      ansible.builtin.command:
+        cmd: helm version --short
+      register: _helm
+      changed_when: false
+
+    - name: Assert helm version
+      ansible.builtin.assert:
+        that:
+          - packages_helm_version in _helm.stdout
+        fail_msg: "helm version mismatch: expected {{ packages_helm_version }}"
+
+    - name: Check kustomize is installed
+      ansible.builtin.command:
+        cmd: kustomize version
+      register: _kustomize
+      changed_when: false
+
+    - name: Assert kustomize version
+      ansible.builtin.assert:
+        that:
+          - packages_kustomize_version in _kustomize.stdout
+        fail_msg: "kustomize version mismatch: expected {{ packages_kustomize_version }}"
+
+    - name: Check virtctl is installed
+      ansible.builtin.command:
+        cmd: virtctl version --client
+      register: _virtctl
+      changed_when: false
+
+    - name: Assert virtctl version
+      ansible.builtin.assert:
+        that:
+          - packages_virtctl_version in _virtctl.stdout
+        fail_msg: "virtctl version mismatch: expected {{ packages_virtctl_version }}"
+
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
@@ -43,3 +95,7 @@
           - "devcontainer: {{ _devcontainer.stdout }}"
           - "jq: {{ _jq.stdout }}"
           - "make: {{ _make.stdout_lines[0] }}"
+          - "kubectl: {{ _kubectl.stdout | from_json | json_query('clientVersion.gitVersion') }}"
+          - "helm: {{ _helm.stdout }}"
+          - "kustomize: {{ _kustomize.stdout }}"
+          - "virtctl: {{ _virtctl.stdout_lines[0] }}"

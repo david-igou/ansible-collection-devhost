@@ -5,6 +5,117 @@
     - name: Include distro-specific package tasks
       ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
 
+- name: Map system architecture to download architecture
+  ansible.builtin.set_fact:
+    __packages_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+
+- name: Check installed kubectl version
+  ansible.builtin.command:
+    cmd: kubectl version --client -o json
+  register: __packages_kubectl_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_kubectl
+
+- name: Install kubectl
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/release/{{ packages_kubectl_version }}/bin/linux/{{ __packages_arch }}/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: "0755"
+    force: true
+  become: true
+  when:
+    - packages_install_kubectl
+    - packages_kubectl_version not in (__packages_kubectl_check.stdout | default(''))
+
+- name: Check installed helm version
+  ansible.builtin.command:
+    cmd: helm version --short
+  register: __packages_helm_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_helm
+
+- name: Download helm tarball
+  ansible.builtin.get_url:
+    url: "https://get.helm.sh/helm-{{ packages_helm_version }}-linux-{{ __packages_arch }}.tar.gz"
+    dest: "/tmp/helm-{{ packages_helm_version }}-linux-{{ __packages_arch }}.tar.gz"
+    mode: "0644"
+  when:
+    - packages_install_helm
+    - packages_helm_version not in (__packages_helm_check.stdout | default(''))
+
+- name: Install helm
+  ansible.builtin.unarchive:
+    src: "/tmp/helm-{{ packages_helm_version }}-linux-{{ __packages_arch }}.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - "linux-{{ __packages_arch }}/helm"
+    extra_opts:
+      - --strip-components=1
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_helm
+    - packages_helm_version not in (__packages_helm_check.stdout | default(''))
+
+- name: Check installed kustomize version
+  ansible.builtin.command:
+    cmd: kustomize version
+  register: __packages_kustomize_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_kustomize
+
+- name: Download kustomize tarball
+  vars:
+    __packages_kustomize_base: "https://github.com/kubernetes-sigs/kustomize/releases/download"
+    __packages_kustomize_tarball: "kustomize_{{ packages_kustomize_version }}_linux_{{ __packages_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "{{ __packages_kustomize_base }}/kustomize%2F{{ packages_kustomize_version }}/{{ __packages_kustomize_tarball }}"
+    dest: "/tmp/{{ __packages_kustomize_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_kustomize
+    - packages_kustomize_version not in (__packages_kustomize_check.stdout | default(''))
+
+- name: Install kustomize
+  vars:
+    __packages_kustomize_tarball: "kustomize_{{ packages_kustomize_version }}_linux_{{ __packages_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_kustomize_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - kustomize
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_kustomize
+    - packages_kustomize_version not in (__packages_kustomize_check.stdout | default(''))
+
+- name: Check installed virtctl version
+  ansible.builtin.command:
+    cmd: virtctl version --client
+  register: __packages_virtctl_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_virtctl
+
+- name: Install virtctl
+  vars:
+    __packages_virtctl_base: "https://github.com/kubevirt/kubevirt/releases/download"
+  ansible.builtin.get_url:
+    url: "{{ __packages_virtctl_base }}/{{ packages_virtctl_version }}/virtctl-{{ packages_virtctl_version }}-linux-{{ __packages_arch }}"
+    dest: /usr/local/bin/virtctl
+    mode: "0755"
+    force: true
+  become: true
+  when:
+    - packages_install_virtctl
+    - packages_virtctl_version not in (__packages_virtctl_check.stdout | default(''))
+
 - name: Install devcontainer CLI
   community.general.npm:
     name: "@devcontainers/cli"
@@ -13,7 +124,7 @@
 
 - name: Install Claude Code # noqa: command-instead-of-module risky-shell-pipe
   ansible.builtin.shell:
-    cmd: curl -fsSL https://claude.ai/install.sh | sh
+    cmd: curl -fsSL https://claude.ai/install.sh | bash
     creates: "{{ ansible_facts.env.HOME }}/.claude/local/bin/claude"
   when: packages_install_claude_code
 
