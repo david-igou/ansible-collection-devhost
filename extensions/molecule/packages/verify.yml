@@ -1,0 +1,45 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Check podman is installed
+      ansible.builtin.command:
+        cmd: podman --version
+      register: _podman
+      changed_when: false
+
+    - name: Check git is installed # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: git --version
+      register: _git
+      changed_when: false
+
+    - name: Check devcontainer CLI is installed
+      ansible.builtin.command:
+        cmd: devcontainer --version
+      register: _devcontainer
+      changed_when: false
+
+    - name: Check jq is installed
+      ansible.builtin.command:
+        cmd: jq --version
+      register: _jq
+      changed_when: false
+
+    - name: Check make is installed
+      ansible.builtin.command:
+        cmd: make --version
+      register: _make
+      changed_when: false
+
+    - name: Print verification summary
+      ansible.builtin.debug:
+        msg:
+          - "podman: {{ _podman.stdout }}"
+          - "git: {{ _git.stdout }}"
+          - "devcontainer: {{ _devcontainer.stdout }}"
+          - "jq: {{ _jq.stdout }}"
+          - "make: {{ _make.stdout_lines[0] }}"

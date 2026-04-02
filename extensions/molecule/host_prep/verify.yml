@@ -5,24 +5,6 @@
   become: false
 
   tasks:
-    - name: Check podman is installed
-      ansible.builtin.command:
-        cmd: podman --version
-      register: _podman
-      changed_when: false
-
-    - name: Check git is installed # noqa: command-instead-of-module
-      ansible.builtin.command:
-        cmd: git --version
-      register: _git
-      changed_when: false
-
-    - name: Check devcontainer CLI is installed
-      ansible.builtin.command:
-        cmd: devcontainer --version
-      register: _devcontainer
-      changed_when: false
-
     - name: Verify workspace directory exists
       ansible.builtin.stat:
         path: "{{ ansible_facts.env.HOME }}/workspace"
@@ -46,6 +28,18 @@
           - _claude_dir.stat.exists
           - _claude_dir.stat.isdir
         fail_msg: "~/.claude directory does not exist"
+
+    - name: Verify .claude.json exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.claude.json"
+      register: _claude_json
+
+    - name: Assert .claude.json
+      ansible.builtin.assert:
+        that:
+          - _claude_json.stat.exists
+          - not _claude_json.stat.isdir
+        fail_msg: "~/.claude.json does not exist"
 
     - name: Verify gitconfig has user.name # noqa: command-instead-of-module
       ansible.builtin.command:
@@ -71,12 +65,24 @@
           - _git_email.stdout == "test@example.com"
         fail_msg: "git user.email not set correctly"
 
+    - name: Verify GitHub SSH URL rewrite # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: git config --global --get url.git@github.com:.insteadOf
+      register: _git_ssh_rewrite
+      changed_when: false
+
+    - name: Assert GitHub SSH URL rewrite
+      ansible.builtin.assert:
+        that:
+          - _git_ssh_rewrite.stdout == "https://github.com/"
+        fail_msg: "GitHub SSH URL rewrite not configured"
+
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
-          - "podman: {{ _podman.stdout }}"
-          - "git: {{ _git.stdout }}"
-          - "devcontainer: {{ _devcontainer.stdout }}"
-          - "workspace: {{ _workspace.stat.exists }}"
+          - "workspace dir: {{ _workspace.stat.exists }}"
+          - ".claude dir: {{ _claude_dir.stat.exists }}"
+          - ".claude.json: {{ _claude_json.stat.exists }}"
           - "git user.name: {{ _git_name.stdout }}"
           - "git user.email: {{ _git_email.stdout }}"
+          - "git ssh rewrite: {{ _git_ssh_rewrite.stdout }}"

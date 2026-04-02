@@ -4,11 +4,11 @@
     path: "{{ item }}"
     state: directory
     mode: "0755"
-  loop: "{{ devhost_host_directories }}"
+  loop: "{{ host_prep_directories }}"
 
 - name: Create seed gitconfig
   ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.gitconfig"
+    path: "{{ ansible_facts.env.HOME }}/.gitconfig"
     state: touch
     mode: "0644"
     modification_time: preserve
@@ -17,7 +17,7 @@
 - name: Create seed claude.json
   ansible.builtin.copy:
     content: "{}"
-    dest: "{{ ansible_env.HOME }}/.claude.json"
+    dest: "{{ ansible_facts.env.HOME }}/.claude.json"
     force: false
     mode: "0644"
 
@@ -25,26 +25,26 @@
   community.general.git_config:
     name: user.name
     scope: global
-    value: "{{ devhost_git_user_name }}"
-  when: devhost_git_user_name | length > 0
+    value: "{{ host_prep_git_user_name }}"
+  when: host_prep_git_user_name | length > 0
 
 - name: Set git user.email
   community.general.git_config:
     name: user.email
     scope: global
-    value: "{{ devhost_git_user_email }}"
-  when: devhost_git_user_email | length > 0
+    value: "{{ host_prep_git_user_email }}"
+  when: host_prep_git_user_email | length > 0
 
 - name: Configure GitHub SSH URL rewrite
   community.general.git_config:
     name: "url.git@github.com:.insteadOf"
     scope: global
     value: "https://github.com/"
-  when: devhost_git_github_ssh_rewrite
+  when: host_prep_git_github_ssh_rewrite
 
 - name: Create 1Password config directory
   ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.config/op"
+    path: "{{ ansible_facts.env.HOME }}/.config/op"
     state: directory
     mode: "0755"
-  when: devhost_install_onepassword | default(true)
+  when: packages_install_onepassword | default(true)

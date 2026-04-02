@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Lint roles and playbooks
-ansible-lint roles/ playbooks/
+# Lint (uses .ansible-lint config with production profile)
+ansible-lint
 
 # Syntax check
 ansible-playbook playbooks/site.yml --syntax-check
@@ -32,13 +32,13 @@ This is a Galaxy collection (namespace `david_igou`, name `devhost`). `galaxy.ym
 ### Roles
 
 - **host_prep** — User-level setup (no `become`): creates bind-mount target directories, seed files (`~/.gitconfig`, `~/.claude.json`), git user/email config, GitHub SSH URL rewrite. Runs first since other roles may depend on directories it creates.
-- **packages** — All package installs (`become: true` for system packages). Uses `include_tasks: "{{ ansible_os_family }}.yml"` to dispatch Debian vs RedHat package manager tasks. Shared post-install tasks (devcontainer CLI, Claude Code, Cursor agent) run without become.
+- **packages** — All package installs (`become: true` for system packages). Uses `include_tasks: "{{ ansible_facts.os_family }}.yml"` to dispatch Debian vs RedHat package manager tasks. Shared post-install tasks (devcontainer CLI, Claude Code, Cursor agent) run without become.
 - **podman_rootless** — Kernel tuning via `ansible.posix.sysctl`, subuid/subgid configuration, podman socket activation (user scope), optional docker.sock symlink. Depends on `packages` role (declared in `meta/main.yml`).
 
 ### Key conventions
 
-- **Variable prefix**: All role variables use `devhost_` as a collection-wide prefix (not per-role), since variables are intentionally shared across roles (e.g., `devhost_install_onepassword` is used by both `packages` and `host_prep`).
-- **Multi-distro dispatch**: Per-distro task files named `Debian.yml` / `RedHat.yml`, included via `ansible_os_family`.
+- **Variable prefix**: Each role prefixes its variables with the role name (e.g., `host_prep_`, `packages_`, `podman_rootless_`). Internal register variables use a double-underscore prefix (e.g., `__podman_rootless_subuid_result`). Cross-role references use the owning role's prefix (e.g., `host_prep` references `packages_install_onepassword`).
+- **Multi-distro dispatch**: Per-distro task files named `Debian.yml` / `RedHat.yml`, included via `ansible_facts.os_family`.
 - **Become strategy**: No `become: true` at play level. Each task declares it individually — package installs and system config use become; user-level tasks do not.
 - **Version pinning**: Renovate manages versions via `# renovate:` annotations in role defaults. See `renovate.json` for the custom manager regex.
 

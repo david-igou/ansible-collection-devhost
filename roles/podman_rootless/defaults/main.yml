@@ -1,6 +1,6 @@
 ---
-devhost_subuid_start: 100000
-devhost_subuid_count: 65536
-devhost_user_namespaces_max: 28633
-devhost_unprivileged_port_start: 0
-devhost_podman_socket_symlink: true
+podman_rootless_subuid_start: 100000
+podman_rootless_subuid_count: 65536
+podman_rootless_user_namespaces_max: 28633
+podman_rootless_unprivileged_port_start: 0
+podman_rootless_socket_symlink: true

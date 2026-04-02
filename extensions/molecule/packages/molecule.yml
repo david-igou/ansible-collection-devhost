@@ -11,11 +11,11 @@ driver:
     ansible_connection_options:
       connection: local
 platforms:
-  - name: devhost-ubuntu-24-lts
+  - name: devhost-packages-ubuntu
     image: docker.io/geerlingguy/docker-ubuntu2404-ansible:latest
     command: sleep 1d
     namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
-  - name: devhost-centos-stream10
+  - name: devhost-packages-centos
     image: quay.io/centos/centos:stream10
     command: sleep 1d
     namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
@@ -33,7 +33,7 @@ provisioner:
 verifier:
   name: ansible
 scenario:
-  name: default
+  name: packages
   test_sequence:
     - dependency
     - syntax

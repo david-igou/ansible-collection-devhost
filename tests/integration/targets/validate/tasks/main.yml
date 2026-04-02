@@ -19,7 +19,7 @@
 
 - name: Verify workspace directory exists
   ansible.builtin.stat:
-    path: "{{ ansible_env.HOME }}/workspace"
+    path: "{{ ansible_facts.env.HOME }}/workspace"
   register: _workspace_dir
 
 - name: Assert workspace directory exists

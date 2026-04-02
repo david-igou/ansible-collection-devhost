@@ -1,0 +1,26 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  become: false
+
+  vars:
+    host_prep_git_user_name: "Test User"
+    host_prep_git_user_email: "test@example.com"
+    packages_install_onepassword: false
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      become: true
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Install git
+      ansible.builtin.package:
+        name: git
+        state: present
+      become: true
+
+  roles:
+    - role: david_igou.devhost.host_prep

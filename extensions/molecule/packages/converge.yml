@@ -9,11 +9,6 @@
     packages_install_github_cli: false
     packages_install_claude_code: false
     packages_install_cursor_agent: false
-    host_prep_git_user_name: "Test User"
-    host_prep_git_user_email: "test@example.com"
-    podman_rootless_socket_symlink: false
 
   roles:
     - role: david_igou.devhost.packages
-    - role: david_igou.devhost.host_prep
-    # - role: david_igou.devhost.podman_rootless

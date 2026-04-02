@@ -1,14 +1,14 @@
 ---
-devhost_git_user_name: ""
-devhost_git_user_email: ""
-devhost_git_github_ssh_rewrite: true
+host_prep_git_user_name: ""
+host_prep_git_user_email: ""
+host_prep_git_github_ssh_rewrite: true
 
-devhost_host_directories:
-  - "{{ ansible_env.HOME }}/.ssh"
-  - "{{ ansible_env.HOME }}/.kube"
-  - "{{ ansible_env.HOME }}/.config/argocd"
-  - "{{ ansible_env.HOME }}/.config/cursor"
-  - "{{ ansible_env.HOME }}/.terraform.d"
-  - "{{ ansible_env.HOME }}/.claude"
-  - "{{ ansible_env.HOME }}/.claude-container"
-  - "{{ ansible_env.HOME }}/workspace"
+host_prep_directories:
+  - "{{ ansible_facts.env.HOME }}/.ssh"
+  - "{{ ansible_facts.env.HOME }}/.kube"
+  - "{{ ansible_facts.env.HOME }}/.config/argocd"
+  - "{{ ansible_facts.env.HOME }}/.config/cursor"
+  - "{{ ansible_facts.env.HOME }}/.terraform.d"
+  - "{{ ansible_facts.env.HOME }}/.claude"
+  - "{{ ansible_facts.env.HOME }}/.claude-container"
+  - "{{ ansible_facts.env.HOME }}/workspace"
