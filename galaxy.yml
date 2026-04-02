@@ -1,0 +1,36 @@
+---
+namespace: david_igou
+name: devhost
+version: 0.1.0
+readme: README.md
+authors:
+  - David Igou
+
+description: Ansible collection for provisioning a bare Linux host for VS Code/Cursor remote server and devcontainer workflows.
+license_file: LICENSE
+
+tags:
+  - linux
+  - tools
+  - devcontainer
+  - podman
+
+dependencies:
+  community.general: ">=8.0.0"
+  ansible.posix: ">=1.5.0"
+
+repository: https://github.com/david-igou/ansible-collection-devhost
+documentation: https://github.com/david-igou/ansible-collection-devhost
+homepage: https://github.com/david-igou/ansible-collection-devhost
+issues: https://github.com/david-igou/ansible-collection-devhost/issues
+
+build_ignore:
+  - .gitignore
+  - .github
+  - .vscode
+  - .devcontainer
+  - .pre-commit-config.yaml
+  - .prettierignore
+  - .isort.cfg
+  - tests
+  - renovate.json

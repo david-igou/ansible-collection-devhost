@@ -1,0 +1,68 @@
+---
+- name: Install core packages
+  ansible.builtin.apt:
+    name:
+      - podman
+      - podman-docker
+      - buildah
+      - skopeo
+      - fuse-overlayfs
+      - slirp4netns
+      - uidmap
+      - catatonit
+      - git
+      - jq
+      - make
+      - curl
+      - nodejs
+      - npm
+    state: present
+    update_cache: true
+
+- name: Add 1Password GPG key
+
+  ansible.builtin.apt_key:
+    url: https://downloads.1password.com/linux/keys/1password.asc
+    keyring: /usr/share/keyrings/1password-archive-keyring.gpg
+    state: present
+  when: devhost_install_onepassword
+
+- name: Add 1Password apt repository
+
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main"
+    filename: 1password
+    state: present
+  when: devhost_install_onepassword
+
+- name: Install 1Password CLI
+
+  ansible.builtin.apt:
+    name: 1password-cli
+    state: present
+    update_cache: true
+  when: devhost_install_onepassword
+
+- name: Add GitHub CLI GPG key
+
+  ansible.builtin.apt_key:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
+    state: present
+  when: devhost_install_github_cli
+
+- name: Add GitHub CLI apt repository
+
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
+    filename: github-cli
+    state: present
+  when: devhost_install_github_cli
+
+- name: Install GitHub CLI
+
+  ansible.builtin.apt:
+    name: gh
+    state: present
+    update_cache: true
+  when: devhost_install_github_cli

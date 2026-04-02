@@ -1,0 +1,49 @@
+---
+- name: Verify podman is installed
+  ansible.builtin.command:
+    cmd: podman --version
+  register: _podman_version
+  changed_when: false
+
+- name: Verify git is installed
+  ansible.builtin.command:
+    cmd: git --version
+  register: _git_version
+  changed_when: false
+
+- name: Verify devcontainer CLI is installed
+  ansible.builtin.command:
+    cmd: devcontainer --version
+  register: _devcontainer_version
+  changed_when: false
+
+- name: Verify workspace directory exists
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/workspace"
+  register: _workspace_dir
+
+- name: Assert workspace directory exists
+  ansible.builtin.assert:
+    that:
+      - _workspace_dir.stat.exists
+      - _workspace_dir.stat.isdir
+
+- name: Verify podman socket is active
+  ansible.builtin.systemd:
+    name: podman.socket
+    scope: user
+  register: _podman_socket
+
+- name: Assert podman socket is enabled
+  ansible.builtin.assert:
+    that:
+      - _podman_socket.status.UnitFileState == "enabled"
+
+- name: Print validation summary
+  ansible.builtin.debug:
+    msg:
+      - "podman: {{ _podman_version.stdout }}"
+      - "git: {{ _git_version.stdout }}"
+      - "devcontainer: {{ _devcontainer_version.stdout }}"
+      - "workspace dir: {{ _workspace_dir.stat.exists }}"
+      - "podman socket enabled: {{ _podman_socket.status.UnitFileState }}"

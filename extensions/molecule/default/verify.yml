@@ -1,0 +1,91 @@
+---
+- name: Verify
+  hosts: devhost
+  gather_facts: true
+  become: false
+  become_user: testuser
+
+  tasks:
+    - name: Check podman is installed
+      ansible.builtin.command:
+        cmd: podman --version
+      register: _podman
+      changed_when: false
+
+    - name: Check git is installed
+      ansible.builtin.command:
+        cmd: git --version
+      register: _git
+      changed_when: false
+
+    - name: Check devcontainer CLI is installed
+      ansible.builtin.command:
+        cmd: devcontainer --version
+      register: _devcontainer
+      changed_when: false
+
+    - name: Verify workspace directory exists
+      ansible.builtin.stat:
+        path: "{{ ansible_env.HOME }}/workspace"
+      register: _workspace
+
+    - name: Assert workspace directory
+      ansible.builtin.assert:
+        that:
+          - _workspace.stat.exists
+          - _workspace.stat.isdir
+        fail_msg: "~/workspace directory does not exist"
+
+    - name: Verify .claude directory exists
+      ansible.builtin.stat:
+        path: "{{ ansible_env.HOME }}/.claude"
+      register: _claude_dir
+
+    - name: Assert .claude directory
+      ansible.builtin.assert:
+        that:
+          - _claude_dir.stat.exists
+          - _claude_dir.stat.isdir
+        fail_msg: "~/.claude directory does not exist"
+
+    - name: Verify gitconfig has user.name
+      community.general.git_config:
+        name: user.name
+        scope: global
+      register: _git_name
+
+    - name: Assert git user.name
+      ansible.builtin.assert:
+        that:
+          - _git_name.config_value == "Test User"
+        fail_msg: "git user.name not set correctly"
+
+    - name: Verify gitconfig has user.email
+      community.general.git_config:
+        name: user.email
+        scope: global
+      register: _git_email
+
+    - name: Assert git user.email
+      ansible.builtin.assert:
+        that:
+          - _git_email.config_value == "test@example.com"
+        fail_msg: "git user.email not set correctly"
+
+    - name: Check sysctl user.max_user_namespaces
+      ansible.builtin.command:
+        cmd: sysctl -n user.max_user_namespaces
+      register: _ns_max
+      changed_when: false
+      become: true
+
+    - name: Print verification summary
+      ansible.builtin.debug:
+        msg:
+          - "podman: {{ _podman.stdout }}"
+          - "git: {{ _git.stdout }}"
+          - "devcontainer: {{ _devcontainer.stdout }}"
+          - "workspace: {{ _workspace.stat.exists }}"
+          - "git user.name: {{ _git_name.config_value }}"
+          - "git user.email: {{ _git_email.config_value }}"
+          - "user.max_user_namespaces: {{ _ns_max.stdout }}"

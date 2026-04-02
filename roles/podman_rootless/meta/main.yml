@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: podman_rootless
+  author: David Igou
+  description: Kernel tuning, user namespace setup, and podman socket activation for rootless containers
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "9"
+
+dependencies:
+  - role: david_igou.devhost.packages

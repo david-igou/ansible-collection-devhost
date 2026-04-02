@@ -1,0 +1,14 @@
+---
+devhost_git_user_name: ""
+devhost_git_user_email: ""
+devhost_git_github_ssh_rewrite: true
+
+devhost_host_directories:
+  - "{{ ansible_env.HOME }}/.ssh"
+  - "{{ ansible_env.HOME }}/.kube"
+  - "{{ ansible_env.HOME }}/.config/argocd"
+  - "{{ ansible_env.HOME }}/.config/cursor"
+  - "{{ ansible_env.HOME }}/.terraform.d"
+  - "{{ ansible_env.HOME }}/.claude"
+  - "{{ ansible_env.HOME }}/.claude-container"
+  - "{{ ansible_env.HOME }}/workspace"

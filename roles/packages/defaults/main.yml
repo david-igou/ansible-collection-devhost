@@ -1,0 +1,8 @@
+---
+devhost_install_onepassword: true
+devhost_install_github_cli: true
+devhost_install_claude_code: true
+devhost_install_cursor_agent: true
+
+# renovate: datasource=npm depName=@devcontainers/cli
+devhost_devcontainer_cli_version: "0.85.0"

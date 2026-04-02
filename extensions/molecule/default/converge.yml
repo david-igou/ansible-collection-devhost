@@ -1,0 +1,19 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  become: false
+
+  vars:
+    devhost_install_onepassword: false
+    devhost_install_github_cli: false
+    devhost_install_claude_code: false
+    devhost_install_cursor_agent: false
+    devhost_git_user_name: "Test User"
+    devhost_git_user_email: "test@example.com"
+    devhost_podman_socket_symlink: false
+
+  roles:
+    - role: david_igou.devhost.packages
+    - role: david_igou.devhost.host_prep
+    # - role: david_igou.devhost.podman_rootless

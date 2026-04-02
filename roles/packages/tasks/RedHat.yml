@@ -1,0 +1,56 @@
+---
+- name: Install core packages
+
+  ansible.builtin.dnf:
+    name:
+      - podman
+      - podman-docker
+      - buildah
+      - skopeo
+      - fuse-overlayfs
+      - slirp4netns
+      - shadow-utils
+      - catatonit
+      - git
+      - jq
+      - make
+      - curl
+      - nodejs
+      - npm
+    state: present
+
+- name: Add 1Password yum repository
+
+  ansible.builtin.yum_repository:
+    name: 1password
+    description: 1Password CLI
+    baseurl: https://downloads.1password.com/linux/rpm/stable/$basearch
+    gpgkey: https://downloads.1password.com/linux/keys/1password.asc
+    gpgcheck: true
+    enabled: true
+  when: devhost_install_onepassword
+
+- name: Install 1Password CLI
+
+  ansible.builtin.dnf:
+    name: 1password-cli
+    state: present
+  when: devhost_install_onepassword
+
+- name: Add GitHub CLI yum repository
+
+  ansible.builtin.yum_repository:
+    name: github-cli
+    description: GitHub CLI
+    baseurl: https://cli.github.com/packages/rpm
+    gpgkey: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x23F3D4EA75716059
+    gpgcheck: true
+    enabled: true
+  when: devhost_install_github_cli
+
+- name: Install GitHub CLI
+
+  ansible.builtin.dnf:
+    name: gh
+    state: present
+  when: devhost_install_github_cli

@@ -1,0 +1,8 @@
+---
+- name: Provision development host
+  hosts: all
+  gather_facts: true
+  roles:
+    - role: david_igou.devhost.host_prep
+    - role: david_igou.devhost.packages
+    - role: david_igou.devhost.podman_rootless

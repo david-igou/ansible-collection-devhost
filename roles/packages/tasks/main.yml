@@ -1,0 +1,25 @@
+---
+- name: System package installation
+  block:
+    - name: Include distro-specific package tasks
+      ansible.builtin.include_tasks: "{{ ansible_os_family }}.yml"
+
+    - name: Install devcontainer CLI
+      community.general.npm:
+        name: "@devcontainers/cli"
+        global: true
+        version: "{{ devhost_devcontainer_cli_version }}"
+
+- name: Install Claude Code
+  ansible.builtin.shell: |
+    curl -fsSL https://claude.ai/install.sh | sh
+  args:
+    creates: "{{ ansible_env.HOME }}/.claude/local/bin/claude"
+  when: devhost_install_claude_code
+
+- name: Install Cursor agent CLI
+  ansible.builtin.shell: |
+    curl -fsSL https://www.cursor.com/install-linux.sh | sh
+  args:
+    creates: "{{ ansible_env.HOME }}/.cursor/bin/cursor-agent"
+  when: devhost_install_cursor_agent
