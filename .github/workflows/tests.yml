@@ -6,6 +6,7 @@ concurrency:
   cancel-in-progress: true
 
 on: # yamllint disable-line rule:truthy
+  push:
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -43,14 +44,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ansible-core molecule
-
-      - name: Install required Ansible collections
-        run: ansible-galaxy collection install community.general ansible.posix containers.podman
-
-      - name: Install collection locally
-        run: |
-          mkdir -p ~/.ansible/collections/ansible_collections/david_igou/devhost
-          cp -a . ~/.ansible/collections/ansible_collections/david_igou/devhost/
 
       - name: Run molecule ${{ matrix.scenario }}
         run: molecule test -s ${{ matrix.scenario }}
