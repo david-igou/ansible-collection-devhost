@@ -116,6 +116,44 @@
     - packages_install_virtctl
     - packages_virtctl_version not in (__packages_virtctl_check.stdout | default(''))
 
+- name: Map system architecture to Node.js architecture
+  ansible.builtin.set_fact:
+    __packages_nodejs_arch: "{{ 'x64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+  when: packages_install_nodejs_pinned
+
+- name: Check installed Node.js version
+  ansible.builtin.command:
+    cmd: node --version
+  register: __packages_nodejs_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_nodejs_pinned
+
+- name: Download Node.js tarball
+  vars:
+    __packages_nodejs_tarball: "node-{{ packages_nodejs_version }}-linux-{{ __packages_nodejs_arch }}.tar.xz"
+  ansible.builtin.get_url:
+    url: "https://nodejs.org/dist/{{ packages_nodejs_version }}/{{ __packages_nodejs_tarball }}"
+    dest: "/tmp/{{ __packages_nodejs_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_nodejs_pinned
+    - (__packages_nodejs_check.stdout | default('')) != packages_nodejs_version
+
+- name: Install Node.js
+  vars:
+    __packages_nodejs_tarball: "node-{{ packages_nodejs_version }}-linux-{{ __packages_nodejs_arch }}.tar.xz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_nodejs_tarball }}"
+    dest: /usr/local
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+  become: true
+  when:
+    - packages_install_nodejs_pinned
+    - (__packages_nodejs_check.stdout | default('')) != packages_nodejs_version
+
 - name: Configure npm prefix for user-level global installs
   ansible.builtin.command:
     cmd: npm config set prefix "{{ ansible_facts.env.HOME }}/.local"

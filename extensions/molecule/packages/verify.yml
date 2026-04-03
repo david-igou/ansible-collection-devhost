@@ -135,6 +135,30 @@
           - _cursor_agent.stdout | length > 0
         fail_msg: "cursor-agent did not return a version string"
 
+    - name: Check Node.js version
+      ansible.builtin.command:
+        cmd: node --version
+      register: _node
+      changed_when: false
+
+    - name: Assert Node.js version
+      ansible.builtin.assert:
+        that:
+          - _node.stdout == packages_nodejs_version
+        fail_msg: "Node.js version mismatch: got {{ _node.stdout }}, expected {{ packages_nodejs_version }}"
+
+    - name: Check npm is available
+      ansible.builtin.command:
+        cmd: npm --version
+      register: _npm
+      changed_when: false
+
+    - name: Assert npm is available
+      ansible.builtin.assert:
+        that:
+          - _npm.rc == 0
+        fail_msg: "npm is not installed"
+
     - name: Check vim is installed
       ansible.builtin.command:
         cmd: vim --version
@@ -230,3 +254,5 @@
           - "nmap: {{ _nmap.stdout_lines[0] }}"
           - "rsync: {{ _rsync.stdout_lines[0] }}"
           - "gpg: {{ _gpg.stdout_lines[0] }}"
+          - "node: {{ _node.stdout }}"
+          - "npm: {{ _npm.stdout }}"

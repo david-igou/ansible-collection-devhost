@@ -14,10 +14,16 @@
       - jq
       - make
       - curl
+    state: present
+    update_cache: true
+
+- name: Install distro Node.js packages
+  ansible.builtin.apt:
+    name:
       - nodejs
       - npm
     state: present
-    update_cache: true
+  when: not packages_install_nodejs_pinned
 
 - name: Add 1Password GPG key
 

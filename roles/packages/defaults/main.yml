@@ -8,6 +8,10 @@ packages_install_helm: true
 packages_install_kustomize: true
 packages_install_virtctl: true
 packages_install_extra_packages: true
+packages_install_nodejs_pinned: true
+
+# renovate: datasource=node-version depName=node
+packages_nodejs_version: "v24.14.1"
 
 packages_extra_packages_debian:
   - python3-pip

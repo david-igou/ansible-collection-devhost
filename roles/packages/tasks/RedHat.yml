@@ -15,9 +15,15 @@
       - jq
       - make
       - curl
+    state: present
+
+- name: Install distro Node.js packages
+  ansible.builtin.dnf:
+    name:
       - nodejs
       - npm
     state: present
+  when: not packages_install_nodejs_pinned
 
 - name: Add 1Password yum repository
 

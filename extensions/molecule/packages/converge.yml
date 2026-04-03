@@ -10,6 +10,7 @@
     packages_install_claude_code: true
     packages_install_cursor_agent: true
     packages_install_extra_packages: true
+    packages_install_nodejs_pinned: true
 
   roles:
     - role: david_igou.devhost.packages
