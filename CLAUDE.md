@@ -167,6 +167,12 @@ Always use FQCNs for all modules and plugins: `ansible.builtin.copy`, not `copy`
 - Do not override role defaults with `set_fact`.
 - Keep roles focused on a single outcome with limited scope.
 
+## Git workflow
+
+- **Authentication**: Always use `gh auth setup-git` before pushing. The SSH key may not be available; `gh` provides credential handling via `GH_TOKEN`.
+- **Pushing**: Run `gh auth setup-git && git push` (or `git push -u origin HEAD` for new branches).
+- **Pre-push gate**: Always run `ansible-lint` before pushing and fix any violations. Do not push code that fails linting.
+
 ## Upstream agent guidance
 
 Per `AGENTS.md`, follow practices from the [ansible-creator agents doc](https://raw.githubusercontent.com/ansible/ansible-creator/refs/heads/main/docs/agents.md).
