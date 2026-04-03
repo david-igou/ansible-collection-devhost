@@ -66,3 +66,9 @@
     state: present
     update_cache: true
   when: packages_install_github_cli
+
+- name: Install extra packages
+  ansible.builtin.apt:
+    name: "{{ packages_extra_packages_debian }}"
+    state: present
+  when: packages_install_extra_packages

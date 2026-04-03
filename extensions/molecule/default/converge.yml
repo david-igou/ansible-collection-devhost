@@ -13,6 +13,7 @@
     packages_install_helm: true
     packages_install_kustomize: true
     packages_install_virtctl: true
+    packages_install_extra_packages: true
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
 

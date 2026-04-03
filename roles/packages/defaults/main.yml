@@ -7,6 +7,99 @@ packages_install_kubectl: true
 packages_install_helm: true
 packages_install_kustomize: true
 packages_install_virtctl: true
+packages_install_extra_packages: true
+
+packages_extra_packages_debian:
+  - python3-pip
+  - python3-venv
+  - python3-netaddr
+  - vim
+  - tmux
+  - screen
+  - tree
+  - direnv
+  - shellcheck
+  - yamllint
+  - unzip
+  - p7zip-full
+  - file
+  - htop
+  - nmap
+  - tcpdump
+  - traceroute
+  - mtr-tiny
+  - fping
+  - arp-scan
+  - dnsutils
+  - iputils-ping
+  - netcat-openbsd
+  - socat
+  - iproute2
+  - whois
+  - wireguard-tools
+  - iperf3
+  - snmp
+  - ipmitool
+  - lvm2
+  - mdadm
+  - smartmontools
+  - parted
+  - sysstat
+  - strace
+  - nfs-common
+  - minicom
+  - android-tools-adb
+  - openssh-client
+  - sshpass
+  - rsync
+  - tftp-hpa
+  - xorriso
+  - gpg
+  - age
+
+packages_extra_packages_redhat:
+  - python3-pip
+  - python3-netaddr
+  - vim
+  - tmux
+  - screen
+  - tree
+  - ShellCheck
+  - yamllint
+  - unzip
+  - p7zip
+  - file
+  - htop
+  - nmap
+  - tcpdump
+  - traceroute
+  - mtr
+  - fping
+  - bind-utils
+  - iputils
+  - nmap-ncat
+  - socat
+  - iproute
+  - whois
+  - wireguard-tools
+  - iperf3
+  - net-snmp-utils
+  - ipmitool
+  - lvm2
+  - mdadm
+  - smartmontools
+  - parted
+  - sysstat
+  - strace
+  - nfs-utils
+  - minicom
+  - openssh-clients
+  - sshpass
+  - rsync
+  - tftp
+  - xorriso
+  - gnupg2
+  - age
 
 # renovate: datasource=npm depName=@devcontainers/cli
 packages_devcontainer_cli_version: "0.85.0"

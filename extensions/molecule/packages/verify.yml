@@ -135,6 +135,80 @@
           - _cursor_agent.stdout | length > 0
         fail_msg: "cursor-agent did not return a version string"
 
+    - name: Check vim is installed
+      ansible.builtin.command:
+        cmd: vim --version
+      register: _vim
+      changed_when: false
+
+    - name: Assert vim is available
+      ansible.builtin.assert:
+        that:
+          - _vim.rc == 0
+        fail_msg: "vim is not installed"
+
+    - name: Check tmux is installed
+      ansible.builtin.command:
+        cmd: tmux -V
+      register: _tmux
+      changed_when: false
+
+    - name: Assert tmux is available
+      ansible.builtin.assert:
+        that:
+          - _tmux.rc == 0
+        fail_msg: "tmux is not installed"
+
+    - name: Check nmap is installed
+      ansible.builtin.command:
+        cmd: nmap --version
+      register: _nmap
+      changed_when: false
+
+    - name: Assert nmap is available
+      ansible.builtin.assert:
+        that:
+          - _nmap.rc == 0
+        fail_msg: "nmap is not installed"
+
+    - name: Check rsync is installed
+      ansible.builtin.command:
+        cmd: rsync --version
+      register: _rsync
+      changed_when: false
+
+    - name: Assert rsync is available
+      ansible.builtin.assert:
+        that:
+          - _rsync.rc == 0
+        fail_msg: "rsync is not installed"
+
+    - name: Check gpg is installed
+      ansible.builtin.command:
+        cmd: gpg --version
+      register: _gpg
+      changed_when: false
+
+    - name: Assert gpg is available
+      ansible.builtin.assert:
+        that:
+          - _gpg.rc == 0
+        fail_msg: "gpg is not installed"
+
+    - name: Check direnv is installed
+      ansible.builtin.command:
+        cmd: direnv version
+      register: _direnv
+      changed_when: false
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Assert direnv is available
+      ansible.builtin.assert:
+        that:
+          - _direnv.rc == 0
+        fail_msg: "direnv is not installed"
+      when: ansible_facts.os_family == "Debian"
+
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
@@ -151,3 +225,8 @@
           - "gh: {{ _gh.stdout_lines[0] }}"
           - "claude: {{ _claude.stdout }}"
           - "agent: {{ _cursor_agent.stdout }}"
+          - "vim: {{ _vim.stdout_lines[0] }}"
+          - "tmux: {{ _tmux.stdout }}"
+          - "nmap: {{ _nmap.stdout_lines[0] }}"
+          - "rsync: {{ _rsync.stdout_lines[0] }}"
+          - "gpg: {{ _gpg.stdout_lines[0] }}"
