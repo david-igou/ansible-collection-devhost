@@ -1,0 +1,73 @@
+---
+- name: Create VM in KubeVirt
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kubevirt.io/v1
+      kind: VirtualMachine
+      metadata:
+        labels:
+          kubevirt.io/domain: "{{ vm.name }}"
+        name: "{{ vm.name }}"
+        namespace: "{{ vm.kubevirt.namespace }}"
+      spec:
+        running: true
+        template:
+          metadata:
+            labels:
+              kubevirt.io/domain: "{{ vm.name }}"
+          spec:
+            domain:
+              devices:
+                disks:
+                  - disk:
+                      bus: virtio
+                    name: containerdisk
+                  - disk:
+                      bus: virtio
+                    name: cloudinitdisk
+                  - disk:
+                      bus: virtio
+                    name: emptydisk
+              resources:
+                requests:
+                  memory: "{{ vm.kubevirt.memory | default('1Gi') }}"
+            volumes:
+              - name: emptydisk
+                emptyDisk:
+                  capacity: "{{ vm.kubevirt.capacity | default('2Gi') }}"
+              - name: containerdisk
+                containerDisk:
+                  image: "{{ vm.kubevirt.image }}"
+              - name: cloudinitdisk
+                cloudInitNoCloud:
+                  userData: |
+                    #cloud-config
+                    preserve_hostname: true
+                    hostname: "{{ vm.name }}"
+                    fqdn: "{{ vm.name }}"
+                    prefer_fqdn_over_hostname: true
+                    users:
+                      - default
+                      - name: {{ vm.kubevirt.ansible_user }}
+                        lock_passwd: true
+                        ssh_authorized_keys:
+                          - "{{ temporary_ssh_public_key }}"
+                    runcmd:
+                      - ["hostnamectl", "set-hostname", "{{ vm.name }}"]
+                      - ["sudo", "yum", "install", "-y", "qemu-guest-agent"]
+                      - ["sudo", "systemctl", "start", "qemu-guest-agent"]
+
+- name: Fetch VM pod info
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    label_selectors:
+      - "vm.kubevirt.io/name={{ vm.name }}"
+    namespace: "{{ vm.kubevirt.namespace }}"
+  register: __kubevirt_vm_pod_info
+
+- name: Extract the node name from the VM pod info
+  ansible.builtin.set_fact:
+    __kubevirt_nodeport_host: >-
+      {{ __kubevirt_vm_pod_info.resources | map(attribute='spec.nodeName') | list | first }}

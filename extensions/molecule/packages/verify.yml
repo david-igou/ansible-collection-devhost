@@ -87,6 +87,54 @@
           - packages_virtctl_version in _virtctl.stdout
         fail_msg: "virtctl version mismatch: expected {{ packages_virtctl_version }}"
 
+    - name: Check 1Password CLI version
+      ansible.builtin.command:
+        cmd: op --version
+      register: _op
+      changed_when: false
+
+    - name: Assert 1Password CLI reports a version
+      ansible.builtin.assert:
+        that:
+          - _op.stdout | length > 0
+        fail_msg: "op did not return a version string"
+
+    - name: Check GitHub CLI version
+      ansible.builtin.command:
+        cmd: gh --version
+      register: _gh
+      changed_when: false
+
+    - name: Assert GitHub CLI reports a version
+      ansible.builtin.assert:
+        that:
+          - _gh.stdout | length > 0
+        fail_msg: "gh did not return a version string"
+
+    - name: Check Claude Code CLI version
+      ansible.builtin.command:
+        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/claude --version"
+      register: _claude
+      changed_when: false
+
+    - name: Assert Claude Code reports a version
+      ansible.builtin.assert:
+        that:
+          - _claude.stdout | length > 0
+        fail_msg: "claude did not return a version string"
+
+    - name: Check Cursor agent CLI version
+      ansible.builtin.command:
+        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/agent --version"
+      register: _cursor_agent
+      changed_when: false
+
+    - name: Assert Cursor agent reports a version
+      ansible.builtin.assert:
+        that:
+          - _cursor_agent.stdout | length > 0
+        fail_msg: "cursor-agent did not return a version string"
+
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
@@ -99,3 +147,7 @@
           - "helm: {{ _helm.stdout }}"
           - "kustomize: {{ _kustomize.stdout }}"
           - "virtctl: {{ _virtctl.stdout_lines[0] }}"
+          - "op: {{ _op.stdout }}"
+          - "gh: {{ _gh.stdout_lines[0] }}"
+          - "claude: {{ _claude.stdout }}"
+          - "agent: {{ _cursor_agent.stdout }}"

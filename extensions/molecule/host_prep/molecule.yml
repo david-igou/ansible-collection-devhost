@@ -12,13 +12,27 @@ driver:
       connection: local
 platforms:
   - name: devhost-host-prep-ubuntu
-    image: docker.io/geerlingguy/docker-ubuntu2404-ansible:latest
-    command: sleep 1d
-    namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+    podman:
+      image: docker.io/geerlingguy/docker-ubuntu2404-ansible:latest
+      command: sleep 1d
+    kubevirt:
+      image: registry.redhat.io/rhel9/rhel-guest-image
+      namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 1Gi
   - name: devhost-host-prep-centos
-    image: quay.io/centos/centos:stream10
-    command: sleep 1d
-    namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+    podman:
+      image: quay.io/centos/centos:stream10
+      command: sleep 1d
+    kubevirt:
+      image: registry.redhat.io/rhel9/rhel-guest-image
+      namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 1Gi
 provisioner:
   name: ansible
   playbooks:

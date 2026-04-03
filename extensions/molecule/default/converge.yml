@@ -5,13 +5,16 @@
   become: false
 
   vars:
-    packages_install_onepassword: false
-    packages_install_github_cli: false
-    packages_install_claude_code: false
-    packages_install_cursor_agent: false
+    packages_install_onepassword: true
+    packages_install_github_cli: true
+    packages_install_claude_code: true
+    packages_install_cursor_agent: true
+    packages_install_kubectl: true
+    packages_install_helm: true
+    packages_install_kustomize: true
+    packages_install_virtctl: true
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
-    podman_rootless_socket_symlink: false
 
   roles:
     - role: david_igou.devhost.packages
