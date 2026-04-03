@@ -15,6 +15,7 @@
     packages_install_virtctl: true
     packages_install_extra_packages: true
     packages_install_nodejs_pinned: true
+    packages_install_pip_packages: true
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
 

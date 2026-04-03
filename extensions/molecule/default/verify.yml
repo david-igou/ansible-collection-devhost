@@ -99,6 +99,42 @@
           - _npm.rc == 0
         fail_msg: "npm is not installed"
 
+    - name: Check ansible is installed
+      ansible.builtin.command:
+        cmd: ansible --version
+      register: _ansible
+      changed_when: false
+
+    - name: Assert ansible is available
+      ansible.builtin.assert:
+        that:
+          - _ansible.rc == 0
+        fail_msg: "ansible is not installed"
+
+    - name: Check molecule is installed
+      ansible.builtin.command:
+        cmd: molecule --version
+      register: _molecule
+      changed_when: false
+
+    - name: Assert molecule is available
+      ansible.builtin.assert:
+        that:
+          - _molecule.rc == 0
+        fail_msg: "molecule is not installed"
+
+    - name: Check yq is installed
+      ansible.builtin.command:
+        cmd: yq --version
+      register: _yq
+      changed_when: false
+
+    - name: Assert yq is available
+      ansible.builtin.assert:
+        that:
+          - _yq.rc == 0
+        fail_msg: "yq is not installed"
+
     - name: Check vim is installed
       ansible.builtin.command:
         cmd: vim --version
@@ -189,3 +225,6 @@
           - "gpg: {{ _gpg.stdout_lines[0] }}"
           - "node: {{ _node.stdout }}"
           - "npm: {{ _npm.stdout }}"
+          - "ansible: {{ _ansible.stdout_lines[0] }}"
+          - "molecule: {{ _molecule.stdout_lines[0] }}"
+          - "yq: {{ _yq.stdout }}"

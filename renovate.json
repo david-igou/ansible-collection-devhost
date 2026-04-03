@@ -15,6 +15,15 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\n\\w+:\\s+\"?(?<currentValue>[^\"\\n]+)\"?"
       ],
       "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update pinned pip package versions in Ansible defaults",
+      "customType": "regex",
+      "managerFilePatterns": ["roles/**/*.yml"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s+-\\s+\"\\S+=+(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "pep440"
     }
   ]
 }

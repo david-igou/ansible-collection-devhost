@@ -5,6 +5,24 @@
     - name: Include distro-specific package tasks
       ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
 
+- name: Install pip packages
+  ansible.builtin.pip:
+    name: "{{ packages_pip_packages }}"
+    extra_args: --break-system-packages --ignore-installed
+  become: true
+  when:
+    - packages_install_pip_packages
+    - packages_pip_packages | length > 0
+
+- name: Install pip packages from requirements file
+  ansible.builtin.pip:
+    requirements: "{{ packages_pip_requirements }}"
+    extra_args: --break-system-packages --ignore-installed
+  become: true
+  when:
+    - packages_install_pip_packages
+    - packages_pip_requirements | length > 0
+
 - name: Map system architecture to download architecture
   ansible.builtin.set_fact:
     __packages_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
