@@ -95,7 +95,7 @@
           - "devcontainer: {{ _devcontainer.stdout }}"
           - "jq: {{ _jq.stdout }}"
           - "make: {{ _make.stdout_lines[0] }}"
-          - "kubectl: {{ _kubectl.stdout | from_json | json_query('clientVersion.gitVersion') }}"
+          - "kubectl: {{ (_kubectl.stdout | from_json).clientVersion.gitVersion }}"
           - "helm: {{ _helm.stdout }}"
           - "kustomize: {{ _kustomize.stdout }}"
           - "virtctl: {{ _virtctl.stdout_lines[0] }}"
