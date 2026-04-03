@@ -116,11 +116,16 @@
     - packages_install_virtctl
     - packages_virtctl_version not in (__packages_virtctl_check.stdout | default(''))
 
-- name: Install devcontainer CLI
+- name: Configure npm prefix for user-level global installs
+  ansible.builtin.command:
+    cmd: npm config set prefix "{{ ansible_facts.env.HOME }}/.local"
+    creates: "{{ ansible_facts.env.HOME }}/.npmrc"
+
+- name: Set npm global prefix to user directory
   community.general.npm:
     name: "@devcontainers/cli"
-    global: true
     version: "{{ packages_devcontainer_cli_version }}"
+    global: true
 
 - name: Install Claude Code # noqa: command-instead-of-module risky-shell-pipe
   ansible.builtin.shell:

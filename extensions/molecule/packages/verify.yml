@@ -23,7 +23,7 @@
 
     - name: Check devcontainer CLI is installed
       ansible.builtin.command:
-        cmd: devcontainer --version
+        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/devcontainer --version"
       register: _devcontainer
       changed_when: false
 

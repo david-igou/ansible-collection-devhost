@@ -5,7 +5,8 @@
       "WebFetch(domain:api.github.com)",
       "Bash(gh api:*)",
       "Bash(molecule create:*)",
-      "Bash(molecule destroy:*)"
+      "Bash(molecule destroy:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

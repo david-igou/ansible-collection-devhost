@@ -61,7 +61,46 @@ molecule converge -s host_prep
 molecule verify -s host_prep
 ```
 
-Molecule scenarios live in `extensions/molecule/<scenario>/`. Each scenario has `converge.yml`, `verify.yml`, and `molecule.yml`. The provisioner files in `extensions/molecule/provisioners/podman/` are shared across scenarios.
+Molecule scenarios live in `extensions/molecule/<scenario>/`. Each scenario has `converge.yml`, `verify.yml`, and `molecule.yml`.
+
+### Provisioner abstraction
+
+Scenarios use a pluggable provisioner pattern. Each `molecule.yml` references shared provisioner files via the `PROVISIONER` env var (defaults to `podman`):
+
+```yaml
+provisioner:
+  playbooks:
+    create: ../provisioners/${PROVISIONER:-podman}/create.yml
+    destroy: ../provisioners/${PROVISIONER:-podman}/destroy.yml
+    prepare: ../provisioners/${PROVISIONER:-podman}/prepare.yml
+  inventory:
+    links:
+      group_vars: ../provisioners/${PROVISIONER:-podman}/group_vars/
+```
+
+Each provisioner directory (`extensions/molecule/provisioners/<name>/`) contains `create.yml`, `destroy.yml`, `prepare.yml`, `requirements.yml`, and `group_vars/all.yml`. Platform entries in `molecule.yml` carry config for each provisioner under namespaced keys (`podman:`, `kubevirt:`), and the active provisioner reads only its own key.
+
+Available provisioners:
+
+- **podman** (default) — Spins up rootless Podman containers via `containers.podman`. Connection: `containers.podman.podman`. Used in CI.
+- **kubevirt** — Creates KubeVirt VirtualMachine resources on an OpenShift/Kubernetes cluster via `kubernetes.core`. Generates an ephemeral SSH keypair, injects it via cloud-init, and exposes SSH through a NodePort service. Connection: `ssh`. Set `MOLECULE_NAMESPACE` to control the target namespace. Two disk strategies are supported — by default VMs use a lightweight containerdisk (ephemeral COW root); set `disk_size` to use a DataVolume-backed root disk with a full-size filesystem (requires CDI and a default StorageClass):
+
+```yaml
+# containerdisk (default — no storage provider needed):
+kubevirt:
+  image: quay.io/containerdisks/ubuntu:24.04
+
+# DataVolume (sized root disk):
+kubevirt:
+  image: quay.io/containerdisks/ubuntu:24.04
+  disk_size: 10Gi
+```
+
+To run with a non-default provisioner:
+
+```bash
+PROVISIONER=kubevirt molecule test -s packages
+```
 
 ### Smoke testing
 

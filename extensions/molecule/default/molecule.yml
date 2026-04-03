@@ -11,28 +11,30 @@ driver:
     ansible_connection_options:
       connection: local
 platforms:
-  - name: devhost-ubuntu-24-lts
+  - name: ubuntu-24
     podman:
       image: docker.io/geerlingguy/docker-ubuntu2404-ansible:latest
       command: sleep 1d
     kubevirt:
-      image: registry.redhat.io/rhel9/rhel-guest-image
-      namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+      image: quay.io/containerdisks/ubuntu:24.04
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
       ssh_service:
         type: NodePort
       ansible_user: cloud-user
-      memory: 1Gi
-  - name: devhost-centos-stream10
+      memory: 4Gi
+      disk_size: 30Gi
+  - name: centos-stream-10
     podman:
       image: quay.io/centos/centos:stream10
       command: sleep 1d
     kubevirt:
-      image: registry.redhat.io/rhel9/rhel-guest-image
-      namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+      image: quay.io/containerdisks/centos-stream:10
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
       ssh_service:
         type: NodePort
       ansible_user: cloud-user
-      memory: 1Gi
+      memory: 4Gi
+      disk_size: 30Gi
 provisioner:
   name: ansible
   playbooks:

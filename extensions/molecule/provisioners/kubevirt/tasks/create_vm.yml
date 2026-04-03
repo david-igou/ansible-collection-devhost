@@ -1,5 +1,118 @@
 ---
-- name: Create VM in KubeVirt
+# Creates a KubeVirt VM using one of two disk strategies based on the
+# platform's kubevirt configuration in molecule.yml:
+#
+# 1. containerdisk (default) — Ephemeral COW root filesystem backed by
+#    the container image. Lightweight and requires no storage provider,
+#    but disk space is limited. Used when `disk_size` is not set.
+#
+# 2. DataVolume — Clones the container image into a PVC-backed root disk
+#    sized to `disk_size`. Requires CDI and a default StorageClass, but
+#    provides a full-size root filesystem. Used when `disk_size` is set.
+#
+# Example molecule.yml platform entries:
+#
+#   # containerdisk (default):
+#   kubevirt:
+#     image: quay.io/containerdisks/ubuntu:24.04
+#     memory: 1Gi
+#
+#   # DataVolume:
+#   kubevirt:
+#     image: quay.io/containerdisks/ubuntu:24.04
+#     memory: 1Gi
+#     disk_size: 10Gi
+
+- name: Create VM in KubeVirt with DataVolume
+  when: vm.kubevirt.disk_size is defined
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kubevirt.io/v1
+      kind: VirtualMachine
+      metadata:
+        labels:
+          kubevirt.io/domain: "{{ vm.name }}"
+        name: "{{ vm.name }}"
+        namespace: "{{ vm.kubevirt.namespace }}"
+      spec:
+        dataVolumeTemplates:
+          - metadata:
+              name: "{{ vm.name }}-rootdisk"
+            spec:
+              source:
+                registry:
+                  url: "docker://{{ vm.kubevirt.image }}"
+              storage:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: "{{ vm.kubevirt.disk_size }}"
+        running: true
+        template:
+          metadata:
+            labels:
+              kubevirt.io/domain: "{{ vm.name }}"
+          spec:
+            domain:
+              devices:
+                disks:
+                  - disk:
+                      bus: virtio
+                    name: rootdisk
+                  - disk:
+                      bus: virtio
+                    name: cloudinitdisk
+              resources:
+                requests:
+                  memory: "{{ vm.kubevirt.memory | default('1Gi') }}"
+            volumes:
+              - name: rootdisk
+                dataVolume:
+                  name: "{{ vm.name }}-rootdisk"
+              - name: cloudinitdisk
+                cloudInitNoCloud:
+                  userData: |
+                    #cloud-config
+                    preserve_hostname: true
+                    hostname: "{{ vm.name }}"
+                    fqdn: "{{ vm.name }}"
+                    prefer_fqdn_over_hostname: true
+                    users:
+                      - default
+                      - name: {{ vm.kubevirt.ansible_user }}
+                        lock_passwd: true
+                        sudo: ALL=(ALL) NOPASSWD:ALL
+                        ssh_authorized_keys:
+                          - "{{ temporary_ssh_public_key }}"
+                    runcmd:
+                      - ["hostnamectl", "set-hostname", "{{ vm.name }}"]
+                      - ["sudo", "yum", "install", "-y", "qemu-guest-agent"]
+                      - ["sudo", "systemctl", "start", "qemu-guest-agent"]
+
+- name: Wait for VM DataVolumes to be ready
+  when: vm.kubevirt.disk_size is defined
+  kubernetes.core.k8s_info:
+    api_version: kubevirt.io/v1
+    kind: VirtualMachine
+    name: "{{ vm.name }}"
+    namespace: "{{ vm.kubevirt.namespace }}"
+  register: __kubevirt_vm_info
+  until:
+    - __kubevirt_vm_info.resources | default([]) | length > 0
+    - >-
+      __kubevirt_vm_info.resources[0].status.conditions
+      | default([])
+      | selectattr('type', '==', 'DataVolumesReady')
+      | selectattr('status', '==', 'True')
+      | list
+      | length > 0
+  retries: 60
+  delay: 10
+
+- name: Create VM in KubeVirt with containerdisk
+  when: vm.kubevirt.disk_size is not defined
   kubernetes.core.k8s:
     state: present
     definition:
@@ -26,16 +139,10 @@
                   - disk:
                       bus: virtio
                     name: cloudinitdisk
-                  - disk:
-                      bus: virtio
-                    name: emptydisk
               resources:
                 requests:
                   memory: "{{ vm.kubevirt.memory | default('1Gi') }}"
             volumes:
-              - name: emptydisk
-                emptyDisk:
-                  capacity: "{{ vm.kubevirt.capacity | default('2Gi') }}"
               - name: containerdisk
                 containerDisk:
                   image: "{{ vm.kubevirt.image }}"
@@ -51,6 +158,7 @@
                       - default
                       - name: {{ vm.kubevirt.ansible_user }}
                         lock_passwd: true
+                        sudo: ALL=(ALL) NOPASSWD:ALL
                         ssh_authorized_keys:
                           - "{{ temporary_ssh_public_key }}"
                     runcmd:
