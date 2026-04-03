@@ -125,10 +125,13 @@
 - name: Install Claude Code # noqa: command-instead-of-module risky-shell-pipe
   ansible.builtin.shell:
     cmd: curl -fsSL https://claude.ai/install.sh | bash
+  register: packages_claude_install_output # <- Registers the command output.
+  changed_when: packages_claude_install_output.rc != 0 # <- Uses the return code to define when the task has changed.
   when: packages_install_claude_code
 
 - name: Install Cursor agent CLI # noqa: command-instead-of-module risky-shell-pipe
   ansible.builtin.shell:
     cmd: curl -fsSL https://cursor.com/install | bash
+  register: packages_cursor_agent_install_output # <- Registers the command output.
+  changed_when: packages_cursor_agent_install_output.rc != 0 # <- Uses the return code to define when the task has changed.
   when: packages_install_cursor_agent
-
