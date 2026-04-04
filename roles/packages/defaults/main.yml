@@ -63,6 +63,7 @@ packages_extra_packages_debian:
 
 packages_extra_packages_redhat:
   - python3-pip
+  - python3-packaging
   - python3-netaddr
   - vim
   - tmux
