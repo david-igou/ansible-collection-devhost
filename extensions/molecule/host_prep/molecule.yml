@@ -33,6 +33,17 @@ platforms:
         type: NodePort
       ansible_user: cloud-user
       memory: 1Gi
+  - name: devhost-host-prep-fedora
+    podman:
+      image: docker.io/geerlingguy/docker-fedora43-ansible:latest
+      command: sleep 1d
+    kubevirt:
+      image: quay.io/containerdisks/fedora:latest
+      namespace: ${MOLECULE_NAMESPACE:-ci-devhost}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 1Gi
 provisioner:
   name: ansible
   playbooks:
