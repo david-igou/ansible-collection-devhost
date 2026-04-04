@@ -172,6 +172,7 @@ Always use FQCNs for all modules and plugins: `ansible.builtin.copy`, not `copy`
 - **Authentication**: Always use `gh auth setup-git` before pushing. The SSH key may not be available; `gh` provides credential handling via `GH_TOKEN`.
 - **Pushing**: Run `gh auth setup-git && git push` (or `git push -u origin HEAD` for new branches).
 - **Pre-push gate**: Always run `ansible-lint` before pushing and fix any violations. Do not push code that fails linting.
+- **KubeVirt validation**: If the `KUBECONFIG` environment variable is set, run `make molecule-kubevirt` before pushing and ensure it passes. Do not push code that fails molecule-kubevirt tests when a cluster is available.
 
 ## Upstream agent guidance
 
