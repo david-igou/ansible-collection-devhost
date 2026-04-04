@@ -14,14 +14,23 @@
     - packages_install_pip_packages
     - packages_pip_packages | length > 0
 
-- name: Install pip packages from requirements file
-  ansible.builtin.pip:
-    requirements: "{{ packages_pip_requirements }}"
-    extra_args: --break-system-packages --ignore-installed
-  become: true
+- name: Handle pip requirements file
   when:
     - packages_install_pip_packages
     - packages_pip_requirements | length > 0
+  block:
+    - name: Download remote pip requirements file
+      ansible.builtin.get_url:
+        url: "{{ packages_pip_requirements }}"
+        dest: /tmp/pip-requirements.txt
+        mode: "0644"
+      when: packages_pip_requirements is match('https?://')
+
+    - name: Install pip packages from requirements file
+      ansible.builtin.pip:
+        requirements: "{{ '/tmp/pip-requirements.txt' if packages_pip_requirements is match('https?://') else packages_pip_requirements }}"
+        extra_args: --break-system-packages --ignore-installed
+      become: true
 
 - name: Map system architecture to download architecture
   ansible.builtin.set_fact:
