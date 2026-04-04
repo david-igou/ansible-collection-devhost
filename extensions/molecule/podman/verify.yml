@@ -298,7 +298,7 @@
       ansible.builtin.command:
         cmd: >-
           podman run --rm
-          -v {{ ansible_facts.env.HOME }}/.config/containers:/host:ro
+          -v {{ ansible_facts.env.HOME }}/.config/containers:/host:ro,z
           docker.io/library/alpine:latest
           cat /host/containers.conf
       register: _volume_run
