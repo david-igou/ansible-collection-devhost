@@ -1,0 +1,12 @@
+---
+docker_enabled: true
+docker_rootless: false
+docker_storage_driver: "overlay2"
+docker_log_driver: "journald"
+docker_live_restore: true
+docker_registry_mirrors: []
+docker_insecure_registries: []
+docker_daemon_options: {}
+
+docker_group_members:
+  - "{{ ansible_facts.user_id }}"

@@ -1,0 +1,7 @@
+{{ {"storage-driver": docker_storage_driver,
+    "log-driver": docker_log_driver,
+    "live-restore": docker_live_restore}
+   | combine({"registry-mirrors": docker_registry_mirrors} if (docker_registry_mirrors | length > 0) else {})
+   | combine({"insecure-registries": docker_insecure_registries} if (docker_insecure_registries | length > 0) else {})
+   | combine(docker_daemon_options)
+   | to_nice_json }}

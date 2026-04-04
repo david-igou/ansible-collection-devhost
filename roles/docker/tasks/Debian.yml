@@ -1,0 +1,13 @@
+---
+- name: Install Docker daemon packages
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - containerd.io
+    state: present
+
+- name: Install rootless Docker extras
+  ansible.builtin.apt:
+    name: docker-ce-rootless-extras
+    state: present
+  when: docker_rootless

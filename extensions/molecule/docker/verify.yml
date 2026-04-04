@@ -1,0 +1,156 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Load docker role defaults
+      ansible.builtin.include_vars:
+        file: ../../../roles/docker/defaults/main.yml
+
+    # -- Docker service --
+
+    - name: Check docker service status # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: systemctl is-active docker.service
+      register: _docker_service
+      changed_when: false
+
+    - name: Assert docker service is active
+      ansible.builtin.assert:
+        that:
+          - _docker_service.stdout == "active"
+        fail_msg: "docker.service is {{ _docker_service.stdout }}, expected active"
+
+    # -- Docker CLI --
+
+    - name: Check docker CLI version
+      ansible.builtin.command:
+        cmd: docker --version
+      register: _docker_version
+      changed_when: false
+
+    - name: Assert docker CLI is Docker CE
+      ansible.builtin.assert:
+        that:
+          - "'Docker' in _docker_version.stdout"
+        fail_msg: >-
+          docker --version does not indicate Docker CE.
+          Got: {{ _docker_version.stdout }}
+
+    # -- Docker group --
+
+    - name: Check user group membership
+      ansible.builtin.command:
+        cmd: "id -nG {{ ansible_facts.user_id }}"
+      register: _groups
+      changed_when: false
+
+    - name: Assert user is in docker group
+      ansible.builtin.assert:
+        that:
+          - "'docker' in _groups.stdout.split()"
+        fail_msg: >-
+          User {{ ansible_facts.user_id }} is not in docker group.
+          Groups: {{ _groups.stdout }}
+
+    # -- Docker info --
+
+    - name: Check docker info as unprivileged user
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker info"
+      register: _docker_info
+      changed_when: false
+
+    - name: Assert docker info succeeded
+      ansible.builtin.assert:
+        that:
+          - _docker_info.rc == 0
+        fail_msg: "docker info failed: {{ _docker_info.stderr }}"
+
+    # -- Container run --
+
+    - name: Run a test container
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker run --rm alpine echo docker-works"
+      register: _docker_run
+      changed_when: false
+
+    - name: Assert container ran and produced expected output
+      ansible.builtin.assert:
+        that:
+          - _docker_run.rc == 0
+          - _docker_run.stdout == "docker-works"
+        fail_msg: "Container output was '{{ _docker_run.stdout }}', expected 'docker-works'"
+
+    # -- Daemon configuration --
+
+    - name: Read daemon.json content
+      ansible.builtin.slurp:
+        src: /etc/docker/daemon.json
+      register: _daemon_json_raw
+      become: true
+
+    - name: Assert daemon.json contains expected configuration
+      vars:
+        __daemon_content: "{{ _daemon_json_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'overlay2' in __daemon_content"
+        fail_msg: >-
+          daemon.json does not contain expected storage-driver.
+          Content: {{ __daemon_content }}
+
+    # -- Docker socket --
+
+    - name: Stat docker socket
+      ansible.builtin.stat:
+        path: /var/run/docker.sock
+      register: _docker_sock
+
+    - name: Assert docker socket is a real socket (not a symlink)
+      ansible.builtin.assert:
+        that:
+          - _docker_sock.stat.exists
+          - _docker_sock.stat.issock
+          - not (_docker_sock.stat.islnk | default(false))
+        fail_msg: >-
+          /var/run/docker.sock is not a real socket.
+          exists={{ _docker_sock.stat.exists }},
+          issock={{ _docker_sock.stat.issock | default(false) }},
+          islnk={{ _docker_sock.stat.islnk | default(false) }}
+
+    # -- Cleanup --
+
+    - name: Clean up pulled images
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker rmi --force alpine"
+      register: _cleanup
+      changed_when: _cleanup.rc == 0
+      failed_when: false
+
+    # -- Summary --
+
+    - name: Print verification summary
+      ansible.builtin.debug:
+        msg:
+          - "docker.service: {{ _docker_service.stdout }}"
+          - "docker version: {{ _docker_version.stdout }}"
+          - "docker group: {{ 'docker' in _groups.stdout.split() }}"
+          - "docker info: passed"
+          - "container run: {{ _docker_run.stdout }}"
+          - "daemon.json: overlay2 configured"
+          - "docker.sock: real socket (not symlink)"

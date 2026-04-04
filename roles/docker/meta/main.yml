@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: docker
+  author: David Igou
+  description: Docker CE daemon management including service configuration, user group membership, and rootless mode
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "9"
+
+dependencies:
+  - role: david_igou.devhost.packages

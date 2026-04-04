@@ -1,0 +1,60 @@
+---
+- name: Warn if podman docker.sock symlink is enabled
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: podman_docker_socket_symlink is true, which will conflict
+      with Docker CE's /var/run/docker.sock. Set podman_docker_socket_symlink
+      to false when using the docker role.
+  when:
+    - docker_enabled
+    - podman_docker_socket_symlink | default(false)
+
+- name: Docker daemon setup
+  become: true
+  when: docker_enabled
+  block:
+    - name: Include distro-specific package tasks
+      ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
+
+    - name: Create Docker configuration directory
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        mode: "0755"
+
+    - name: Deploy Docker daemon configuration
+      ansible.builtin.template:
+        src: daemon.json.j2
+        dest: /etc/docker/daemon.json
+        mode: "0644"
+      notify: Restart docker
+
+    - name: Add users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_group_members }}"
+
+    - name: Enable and start Docker service
+      ansible.builtin.systemd:
+        name: docker.service
+        enabled: true
+        state: started
+
+- name: Configure rootless Docker
+  when:
+    - docker_enabled
+    - docker_rootless
+  block:
+    - name: Set up rootless Docker
+      ansible.builtin.command:
+        cmd: dockerd-rootless-setuptool.sh install
+        creates: "{{ ansible_facts.env.HOME }}/.config/systemd/user/docker.service"
+
+    - name: Enable rootless Docker service
+      ansible.builtin.systemd:
+        name: docker.service
+        enabled: true
+        state: started
+        scope: user

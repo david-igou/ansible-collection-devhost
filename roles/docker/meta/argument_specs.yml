@@ -1,0 +1,60 @@
+---
+argument_specs:
+  main:
+    short_description: Manage Docker CE daemon and service
+    description:
+      - Installs Docker CE daemon and containerd.
+      - Deploys /etc/docker/daemon.json with configurable options.
+      - Manages docker group membership for socket access.
+      - Enables and starts docker.service.
+      - Optionally configures rootless Docker for the target user.
+    options:
+      docker_enabled:
+        type: bool
+        default: true
+        description: >-
+          Gate for all role tasks. Set to false to include the role
+          without executing any tasks.
+      docker_rootless:
+        type: bool
+        default: false
+        description: >-
+          Install docker-ce-rootless-extras and configure rootless Docker
+          for the target user. Adds a user-scoped docker.service unit.
+      docker_storage_driver:
+        type: str
+        default: "overlay2"
+        description: Storage driver for the Docker daemon (daemon.json storage-driver).
+      docker_log_driver:
+        type: str
+        default: "journald"
+        description: Default logging driver for containers (daemon.json log-driver).
+      docker_live_restore:
+        type: bool
+        default: true
+        description: >-
+          Enable live restore so running containers persist across daemon restarts.
+      docker_registry_mirrors:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          List of registry mirror URLs. Included in daemon.json only when non-empty.
+      docker_insecure_registries:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          List of insecure registries. Included in daemon.json only when non-empty.
+      docker_daemon_options:
+        type: dict
+        default: {}
+        description: >-
+          Arbitrary additional keys merged into daemon.json.
+          These take precedence over the standard keys.
+      docker_group_members:
+        type: list
+        elements: str
+        description: >-
+          List of users to add to the docker group for socket access.
+          Defaults to the current Ansible user.
