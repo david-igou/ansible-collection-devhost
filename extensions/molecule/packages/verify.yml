@@ -269,6 +269,65 @@
         fail_msg: "direnv is not installed"
       when: ansible_facts.os_family == "Debian"
 
+    # -- Docker CE CLI --
+
+    - name: Check docker CLI version
+      ansible.builtin.command:
+        cmd: docker --version
+      register: _docker
+      changed_when: false
+
+    - name: Assert docker CLI is Docker CE (not podman)
+      ansible.builtin.assert:
+        that:
+          - "'Docker' in _docker.stdout"
+          - "'podman' not in _docker.stdout"
+        fail_msg: >-
+          docker --version output does not indicate Docker CE.
+          Got: {{ _docker.stdout }}
+
+    - name: Check docker compose version
+      ansible.builtin.command:
+        cmd: docker compose version
+      register: _docker_compose
+      changed_when: false
+
+    - name: Assert docker compose plugin is installed
+      ansible.builtin.assert:
+        that:
+          - _docker_compose.rc == 0
+        fail_msg: "docker compose plugin is not installed"
+
+    - name: Verify podman-docker is not installed (Debian) # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: dpkg -l podman-docker
+      register: _podman_docker_deb
+      changed_when: false
+      failed_when: false
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Assert podman-docker is absent (Debian)
+      ansible.builtin.assert:
+        that:
+          - _podman_docker_deb.rc != 0
+        fail_msg: "podman-docker is still installed"
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Verify podman-docker is not installed (RedHat) # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: rpm -q podman-docker
+      register: _podman_docker_rpm
+      changed_when: false
+      failed_when: false
+      when: ansible_facts.os_family == "RedHat"
+
+    - name: Assert podman-docker is absent (RedHat)
+      ansible.builtin.assert:
+        that:
+          - _podman_docker_rpm.rc != 0
+        fail_msg: "podman-docker is still installed"
+      when: ansible_facts.os_family == "RedHat"
+
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
@@ -290,6 +349,8 @@
           - "nmap: {{ _nmap.stdout_lines[0] }}"
           - "rsync: {{ _rsync.stdout_lines[0] }}"
           - "gpg: {{ _gpg.stdout_lines[0] }}"
+          - "docker: {{ _docker.stdout }}"
+          - "docker-compose: {{ _docker_compose.stdout }}"
           - "node: {{ _node.stdout }}"
           - "npm: {{ _npm.stdout }}"
           - "ansible: {{ _ansible.stdout_lines[0] }}"
