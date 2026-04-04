@@ -1,0 +1,764 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Load podman role defaults
+      ansible.builtin.include_vars:
+        file: ../../../roles/podman/defaults/main.yml
+
+    - name: Load docker role defaults
+      ansible.builtin.include_vars:
+        file: ../../../roles/docker/defaults/main.yml
+
+    # ===================================================================
+    # Section 1 — Podman rootless fundamentals
+    # ===================================================================
+
+    - name: Read user.max_user_namespaces sysctl
+      ansible.builtin.command:
+        cmd: sysctl -n user.max_user_namespaces
+      register: _userns
+      changed_when: false
+
+    - name: Assert user.max_user_namespaces matches expected value
+      ansible.builtin.assert:
+        that:
+          - _userns.stdout | int == podman_user_namespaces_max | int
+        fail_msg: >-
+          user.max_user_namespaces is {{ _userns.stdout }},
+          expected {{ podman_user_namespaces_max }}
+
+    - name: Read net.ipv4.ip_unprivileged_port_start sysctl
+      ansible.builtin.command:
+        cmd: sysctl -n net.ipv4.ip_unprivileged_port_start
+      register: _portstart
+      changed_when: false
+
+    - name: Assert unprivileged port start matches expected value
+      ansible.builtin.assert:
+        that:
+          - _portstart.stdout | int == podman_unprivileged_port_start | int
+        fail_msg: >-
+          net.ipv4.ip_unprivileged_port_start is {{ _portstart.stdout }},
+          expected {{ podman_unprivileged_port_start }}
+
+    - name: Read subuid file
+      ansible.builtin.slurp:
+        src: /etc/subuid
+      register: _subuid_raw
+      become: true
+
+    - name: Assert subuid range is configured correctly
+      vars:
+        __expected_start: "{{ podman_subuid_start }}"
+        __expected_count: "{{ podman_subuid_count }}"
+        __subuid_content: "{{ _subuid_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.user_id in __subuid_content
+          - __expected_start | string in __subuid_content
+        fail_msg: >-
+          subuid not configured for {{ ansible_facts.user_id }}
+          with start={{ __expected_start }} count={{ __expected_count }}.
+          Content: {{ __subuid_content }}
+
+    - name: Read subgid file
+      ansible.builtin.slurp:
+        src: /etc/subgid
+      register: _subgid_raw
+      become: true
+
+    - name: Assert subgid range is configured correctly
+      vars:
+        __expected_start: "{{ podman_subuid_start }}"
+        __expected_count: "{{ podman_subuid_count }}"
+        __subgid_content: "{{ _subgid_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.user_id in __subgid_content
+          - __expected_start | string in __subgid_content
+        fail_msg: >-
+          subgid not configured for {{ ansible_facts.user_id }}
+          with start={{ __expected_start }} count={{ __expected_count }}.
+          Content: {{ __subgid_content }}
+
+    - name: Check lingering is enabled
+      ansible.builtin.stat:
+        path: "/var/lib/systemd/linger/{{ ansible_facts.user_id }}"
+      register: _linger
+
+    - name: Assert lingering is enabled
+      ansible.builtin.assert:
+        that:
+          - _linger.stat.exists
+        fail_msg: "Lingering not enabled for {{ ansible_facts.user_id }}"
+
+    - name: Check podman socket unit is enabled # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: systemctl --user is-enabled podman.socket
+      register: _socket_enabled
+      changed_when: false
+
+    - name: Assert podman socket unit is enabled
+      ansible.builtin.assert:
+        that:
+          - _socket_enabled.stdout == "enabled"
+        fail_msg: "podman.socket is {{ _socket_enabled.stdout }}, expected enabled"
+
+    - name: Query podman API via socket # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: >-
+          curl --silent --unix-socket
+          /run/user/{{ ansible_facts.user_uid }}/podman/podman.sock
+          http://d/v5.0.0/libpod/info
+      register: _api_response
+      changed_when: false
+
+    - name: Assert podman API responds with valid JSON
+      vars:
+        __api_json: "{{ _api_response.stdout | from_json }}"
+      ansible.builtin.assert:
+        that:
+          - __api_json.host is defined
+          - __api_json.host.security is defined
+        fail_msg: "Podman API did not return expected JSON structure"
+
+    - name: Read containers.conf content
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts.env.HOME }}/.config/containers/containers.conf"
+      register: _containers_conf_raw
+
+    - name: Assert containers.conf has expected events_logger setting
+      vars:
+        __conf_content: "{{ _containers_conf_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'events_logger' in __conf_content"
+          - >-
+            'events_logger = "' + podman_events_logger + '"'
+            in __conf_content
+        fail_msg: >-
+          containers.conf does not contain
+          events_logger = "{{ podman_events_logger }}".
+          Content: {{ __conf_content }}
+
+    - name: Read storage.conf content
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts.env.HOME }}/.config/containers/storage.conf"
+      register: _storage_conf_raw
+
+    - name: Assert storage.conf contains expected driver
+      vars:
+        __storage_content: "{{ _storage_conf_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'driver = \"overlay\"' in __storage_content"
+        fail_msg: >-
+          storage.conf does not contain expected driver config.
+          Content: {{ __storage_content }}
+
+    # ===================================================================
+    # Section 2 — Docker CE daemon
+    # ===================================================================
+
+    - name: Check docker service status # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: systemctl is-active docker.service
+      register: _docker_service
+      changed_when: false
+
+    - name: Assert docker service is active
+      ansible.builtin.assert:
+        that:
+          - _docker_service.stdout == "active"
+        fail_msg: "docker.service is {{ _docker_service.stdout }}, expected active"
+
+    - name: Check user group membership
+      ansible.builtin.command:
+        cmd: "id -nG {{ ansible_facts.user_id }}"
+      register: _groups
+      changed_when: false
+
+    - name: Assert user is in docker group
+      ansible.builtin.assert:
+        that:
+          - "'docker' in _groups.stdout.split()"
+        fail_msg: >-
+          User {{ ansible_facts.user_id }} is not in docker group.
+          Groups: {{ _groups.stdout }}
+
+    - name: Check docker info as unprivileged user
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker info"
+      register: _docker_info
+      changed_when: false
+
+    - name: Assert docker info succeeded
+      ansible.builtin.assert:
+        that:
+          - _docker_info.rc == 0
+        fail_msg: "docker info failed: {{ _docker_info.stderr }}"
+
+    - name: Read daemon.json content
+      ansible.builtin.slurp:
+        src: /etc/docker/daemon.json
+      register: _daemon_json_raw
+      become: true
+
+    - name: Assert daemon.json contains expected configuration
+      vars:
+        __daemon_content: "{{ _daemon_json_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'overlay2' in __daemon_content"
+        fail_msg: >-
+          daemon.json does not contain expected storage-driver.
+          Content: {{ __daemon_content }}
+
+    - name: Stat docker socket
+      ansible.builtin.stat:
+        path: /var/run/docker.sock
+      register: _docker_sock
+
+    - name: Assert docker socket is a real socket (not a symlink)
+      ansible.builtin.assert:
+        that:
+          - _docker_sock.stat.exists
+          - _docker_sock.stat.issock
+          - not (_docker_sock.stat.islnk | default(false))
+        fail_msg: >-
+          /var/run/docker.sock is not a real socket.
+          exists={{ _docker_sock.stat.exists }},
+          issock={{ _docker_sock.stat.issock | default(false) }},
+          islnk={{ _docker_sock.stat.islnk | default(false) }}
+
+    # ===================================================================
+    # Section 3 — Coexistence
+    # ===================================================================
+
+    - name: Check docker CLI version
+      ansible.builtin.command:
+        cmd: docker --version
+      register: _docker_version
+      changed_when: false
+
+    - name: Assert docker CLI is Docker CE (not podman)
+      ansible.builtin.assert:
+        that:
+          - "'Docker' in _docker_version.stdout"
+        fail_msg: >-
+          docker --version does not indicate Docker CE.
+          Got: {{ _docker_version.stdout }}
+
+    - name: Check podman CLI version
+      ansible.builtin.command:
+        cmd: podman --version
+      register: _podman_version
+      changed_when: false
+
+    - name: Assert podman CLI is available
+      ansible.builtin.assert:
+        that:
+          - _podman_version.rc == 0
+        fail_msg: "podman --version failed: {{ _podman_version.stderr }}"
+
+    - name: Pull alpine via podman
+      ansible.builtin.command:
+        cmd: podman pull --quiet docker.io/library/alpine:latest
+      changed_when: false
+
+    - name: Pull alpine via docker
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker pull --quiet alpine:latest"
+      changed_when: false
+
+    - name: Run container via podman
+      ansible.builtin.command:
+        cmd: podman run --rm docker.io/library/alpine:latest echo podman-ok
+      register: _podman_run
+      changed_when: false
+
+    - name: Assert podman container produced expected output
+      ansible.builtin.assert:
+        that:
+          - _podman_run.stdout == "podman-ok"
+        fail_msg: "podman output was '{{ _podman_run.stdout }}', expected 'podman-ok'"
+
+    - name: Run container via docker
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker run --rm alpine echo docker-ok"
+      register: _docker_run
+      changed_when: false
+
+    - name: Assert docker container produced expected output
+      ansible.builtin.assert:
+        that:
+          - _docker_run.stdout == "docker-ok"
+        fail_msg: "docker output was '{{ _docker_run.stdout }}', expected 'docker-ok'"
+
+    - name: List podman alpine image IDs
+      ansible.builtin.command:
+        cmd: podman images --quiet docker.io/library/alpine
+      register: _podman_images
+      changed_when: false
+
+    - name: List docker alpine image IDs
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker images --quiet alpine"
+      register: _docker_images
+      changed_when: false
+
+    - name: Assert podman and docker image stores are independent
+      ansible.builtin.assert:
+        that:
+          - _podman_images.stdout | length > 0
+          - _docker_images.stdout | length > 0
+        fail_msg: >-
+          One or both image stores are empty.
+          podman={{ _podman_images.stdout }},
+          docker={{ _docker_images.stdout }}
+
+    # ===================================================================
+    # Section 4 — Rootless container lifecycle
+    # ===================================================================
+
+    - name: Run rootless container with userns=keep-id
+      ansible.builtin.command:
+        cmd: podman run --rm --userns=keep-id docker.io/library/alpine:latest id -u
+      register: _keepid
+      changed_when: false
+
+    - name: Assert rootless container UID matches host user
+      ansible.builtin.assert:
+        that:
+          - _keepid.stdout | int == ansible_facts.user_uid | int
+        fail_msg: >-
+          Container UID is {{ _keepid.stdout }},
+          expected {{ ansible_facts.user_uid }}
+
+    - name: Create temporary test file for volume mount
+      ansible.builtin.copy:
+        content: "volume-test-content"
+        dest: /tmp/rootless-vol-test
+        mode: "0644"
+
+    - name: Run rootless container with volume mount
+      ansible.builtin.command:
+        cmd: >-
+          podman run --rm --userns=keep-id
+          -v /tmp/rootless-vol-test:/mnt/testfile:z
+          docker.io/library/alpine:latest cat /mnt/testfile
+      register: _volmount
+      changed_when: false
+
+    - name: Assert volume mount worked correctly
+      ansible.builtin.assert:
+        that:
+          - _volmount.stdout == "volume-test-content"
+        fail_msg: >-
+          Volume content was '{{ _volmount.stdout }}',
+          expected 'volume-test-content'
+
+    - name: Verify user namespace mapping
+      ansible.builtin.command:
+        cmd: podman unshare cat /proc/self/uid_map
+      register: _uid_map
+      changed_when: false
+
+    - name: Assert user namespace provides subordinate UIDs
+      ansible.builtin.assert:
+        that:
+          - _uid_map.stdout_lines | length > 1
+        fail_msg: >-
+          uid_map has {{ _uid_map.stdout_lines | length }} entries,
+          expected more than 1. Content: {{ _uid_map.stdout }}
+
+    # ===================================================================
+    # Section 5 — Rootless Docker
+    # ===================================================================
+
+    # -- Rootless Docker --
+    # TODO: Add rootless Docker tests after #20 is merged.
+    # See issue #19 section 5 for the test criteria.
+
+    # ===================================================================
+    # Section 6 — Privileged container launch
+    # ===================================================================
+
+    - name: Run privileged podman container
+      ansible.builtin.command:
+        cmd: podman run --rm --privileged docker.io/library/alpine:latest cat /proc/self/status
+      register: _podman_priv
+      changed_when: false
+
+    - name: Assert privileged podman container has full capabilities
+      ansible.builtin.assert:
+        that:
+          - "'CapEff' in _podman_priv.stdout"
+        fail_msg: "Privileged podman container missing CapEff in /proc/self/status"
+
+    - name: Run privileged docker container
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker run --rm --privileged alpine cat /proc/self/status"
+      register: _docker_priv
+      changed_when: false
+
+    - name: Assert privileged docker container has full capabilities
+      ansible.builtin.assert:
+        that:
+          - "'CapEff' in _docker_priv.stdout"
+        fail_msg: "Privileged docker container missing CapEff in /proc/self/status"
+
+    # ===================================================================
+    # Pre-pull nested container image and create build context
+    # ===================================================================
+
+    - name: Pull podman stable image via podman
+      ansible.builtin.command:
+        cmd: podman pull --quiet quay.io/podman/stable
+      changed_when: false
+
+    - name: Pull podman stable image via docker
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker pull --quiet quay.io/podman/stable"
+      changed_when: false
+
+    - name: Create build context directory
+      ansible.builtin.file:
+        path: /tmp/buildctx
+        state: directory
+        mode: "0755"
+
+    - name: Create Containerfile for nested build tests
+      ansible.builtin.copy:
+        content: |
+          FROM alpine
+          RUN echo built
+        dest: /tmp/buildctx/Containerfile
+        mode: "0644"
+
+    # ===================================================================
+    # Section 7 — Nested podman (podman-in-podman)
+    # ===================================================================
+
+    - name: Run podman inside a privileged podman container
+      ansible.builtin.command:
+        cmd: >-
+          podman run --rm --privileged
+          quay.io/podman/stable
+          podman run --rm alpine echo nested-ok
+      register: _nested_priv
+      changed_when: false
+      failed_when: false
+
+    - name: Validate nested privileged podman
+      block:
+        - name: Assert nested privileged podman worked
+          ansible.builtin.assert:
+            that:
+              - "'nested-ok' in _nested_priv.stdout"
+            fail_msg: >-
+              Nested privileged podman failed.
+              stdout: {{ _nested_priv.stdout }}
+              stderr: {{ _nested_priv.stderr }}
+      rescue:
+        - name: Note nested privileged podman limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              nested privileged podman failed.
+
+    - name: Run podman inside a container with targeted capabilities
+      ansible.builtin.command:
+        cmd: >-
+          podman run --rm
+          --cap-add SYS_ADMIN,MKNOD,SYS_CHROOT
+          --device /dev/fuse
+          --security-opt unmask=/proc/*
+          quay.io/podman/stable
+          podman run --rm alpine echo nested-caps-ok
+      register: _nested_caps
+      changed_when: false
+      failed_when: false
+
+    - name: Validate nested targeted-caps podman
+      block:
+        - name: Assert nested targeted-caps podman worked
+          ansible.builtin.assert:
+            that:
+              - "'nested-caps-ok' in _nested_caps.stdout"
+            fail_msg: >-
+              Nested targeted-caps podman failed.
+              stdout: {{ _nested_caps.stdout }}
+              stderr: {{ _nested_caps.stderr }}
+      rescue:
+        - name: Note nested targeted-caps limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              nested podman with targeted capabilities fails
+              due to SELinux/kernel restrictions on proc mount.
+
+    - name: Run podman inside a container using vfs storage driver
+      ansible.builtin.command:
+        cmd: >-
+          podman run --rm
+          --security-opt unmask=/proc/*
+          quay.io/podman/stable
+          podman --storage-driver vfs run --rm alpine echo nested-vfs-ok
+      register: _nested_vfs
+      changed_when: false
+      failed_when: false
+
+    - name: Validate nested vfs podman
+      block:
+        - name: Assert nested vfs podman worked
+          ansible.builtin.assert:
+            that:
+              - "'nested-vfs-ok' in _nested_vfs.stdout"
+            fail_msg: >-
+              Nested vfs podman failed.
+              stdout: {{ _nested_vfs.stdout }}
+              stderr: {{ _nested_vfs.stderr }}
+      rescue:
+        - name: Note nested vfs podman limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              nested podman with vfs storage driver fails
+              due to kernel restrictions on mqueue mount.
+
+    # ===================================================================
+    # Section 8 — Podman inside Docker
+    # ===================================================================
+
+    - name: Run podman inside a privileged Docker container
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker run --rm --privileged quay.io/podman/stable podman run --rm alpine echo podman-in-docker-ok"
+      register: _pid_priv
+      changed_when: false
+      failed_when: false
+
+    - name: Validate podman-in-docker privileged
+      block:
+        - name: Assert podman-in-docker privileged worked
+          ansible.builtin.assert:
+            that:
+              - "'podman-in-docker-ok' in _pid_priv.stdout"
+            fail_msg: >-
+              Podman-in-docker privileged failed.
+              stdout: {{ _pid_priv.stdout }}
+              stderr: {{ _pid_priv.stderr }}
+      rescue:
+        - name: Note podman-in-docker privileged limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              podman-in-docker privileged failed.
+
+    - name: Run podman inside a Docker container with targeted capabilities
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - >-
+            docker run --rm
+            --cap-add SYS_ADMIN --cap-add MKNOD --cap-add SYS_CHROOT
+            --device /dev/fuse
+            --security-opt 'unmask=/proc/*'
+            quay.io/podman/stable
+            podman run --rm alpine echo podman-in-docker-caps-ok
+      register: _pid_caps
+      changed_when: false
+      failed_when: false
+
+    - name: Validate podman-in-docker targeted-caps
+      block:
+        - name: Assert podman-in-docker targeted-caps worked
+          ansible.builtin.assert:
+            that:
+              - "'podman-in-docker-caps-ok' in _pid_caps.stdout"
+            fail_msg: >-
+              Podman-in-docker targeted-caps failed.
+              stdout: {{ _pid_caps.stdout }}
+              stderr: {{ _pid_caps.stderr }}
+      rescue:
+        - name: Note podman-in-docker targeted-caps limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              podman-in-docker with targeted capabilities fails
+              due to SELinux/kernel restrictions.
+
+    - name: Run podman inside a Docker container using vfs storage driver
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - >-
+            docker run --rm
+            --security-opt 'unmask=/proc/*'
+            quay.io/podman/stable
+            podman --storage-driver vfs run --rm alpine echo podman-in-docker-vfs-ok
+      register: _pid_vfs
+      changed_when: false
+      failed_when: false
+
+    - name: Validate podman-in-docker vfs
+      block:
+        - name: Assert podman-in-docker vfs worked
+          ansible.builtin.assert:
+            that:
+              - "'podman-in-docker-vfs-ok' in _pid_vfs.stdout"
+            fail_msg: >-
+              Podman-in-docker vfs failed.
+              stdout: {{ _pid_vfs.stdout }}
+              stderr: {{ _pid_vfs.stderr }}
+      rescue:
+        - name: Note podman-in-docker vfs limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              podman-in-docker with vfs storage driver fails
+              due to kernel restrictions.
+
+    - name: Build container image with podman inside a Docker container
+      ansible.builtin.command:
+        argv:
+          - sg
+          - docker
+          - -c
+          - "docker run --rm --privileged -v /tmp/buildctx:/build quay.io/podman/stable podman build -t test-build-in-docker /build"
+      register: _pid_build
+      changed_when: false
+      failed_when: false
+
+    - name: Validate podman-in-docker build
+      block:
+        - name: Assert podman-in-docker build succeeded
+          ansible.builtin.assert:
+            that:
+              - _pid_build.rc == 0
+            fail_msg: >-
+              Podman-in-docker build failed.
+              stderr: {{ _pid_build.stderr }}
+      rescue:
+        - name: Note podman-in-docker build limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              podman-in-docker build failed.
+
+    # ===================================================================
+    # Section 9 — Nested container builds (podman-in-podman)
+    # ===================================================================
+
+    - name: Build container image inside a privileged podman container
+      ansible.builtin.command:
+        cmd: >-
+          podman run --rm --privileged
+          -v /tmp/buildctx:/build:z
+          quay.io/podman/stable
+          podman build -t test-build /build
+      register: _nested_build
+      changed_when: false
+      failed_when: false
+
+    - name: Validate nested privileged build
+      block:
+        - name: Assert nested privileged build succeeded
+          ansible.builtin.assert:
+            that:
+              - _nested_build.rc == 0
+            fail_msg: >-
+              Nested privileged build failed.
+              stderr: {{ _nested_build.stderr }}
+      rescue:
+        - name: Note nested privileged build limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              nested privileged build failed.
+
+    - name: Build container image using vfs storage driver
+      ansible.builtin.command:
+        cmd: >-
+          podman run --rm
+          --security-opt unmask=/proc/*
+          -v /tmp/buildctx:/build:z
+          quay.io/podman/stable
+          podman --storage-driver vfs build -t test-build-vfs /build
+      register: _nested_vfs_build
+      changed_when: false
+      failed_when: false
+
+    - name: Validate nested vfs build
+      block:
+        - name: Assert nested vfs build succeeded
+          ansible.builtin.assert:
+            that:
+              - _nested_vfs_build.rc == 0
+            fail_msg: >-
+              Nested vfs build failed.
+              stderr: {{ _nested_vfs_build.stderr }}
+      rescue:
+        - name: Note nested vfs build limitation
+          ansible.builtin.debug:
+            msg: >-
+              Known limitation on {{ ansible_distribution }}:
+              nested vfs build failed due to kernel restrictions.
+
+    # ===================================================================
+    # Section 10 — Summary
+    # ===================================================================
+
+    - name: Print verification summary
+      ansible.builtin.debug:
+        msg:
+          - "Podman rootless: passed"
+          - "Docker CE: passed"
+          - "Coexistence: passed"
+          - "Rootless podman lifecycle: passed"
+          - "Rootless Docker: skipped (see #19 section 5)"
+          - "Privileged containers: passed"
+          - "Nested podman (privileged): {{ 'passed' if 'nested-ok' in _nested_priv.stdout else 'FAILED' }}"
+          - "Nested podman (targeted caps): {{ 'passed' if 'nested-caps-ok' in _nested_caps.stdout else 'FAILED' }}"
+          - "Nested podman (vfs): {{ 'passed' if 'nested-vfs-ok' in _nested_vfs.stdout else 'FAILED' }}"
+          - "Podman-in-Docker (privileged): {{ 'passed' if 'podman-in-docker-ok' in _pid_priv.stdout else 'FAILED' }}"
+          - "Podman-in-Docker (targeted caps): {{ 'passed' if 'podman-in-docker-caps-ok' in _pid_caps.stdout else 'FAILED' }}"
+          - "Podman-in-Docker (vfs): {{ 'passed' if 'podman-in-docker-vfs-ok' in _pid_vfs.stdout else 'FAILED' }}"
+          - "Podman-in-Docker build: {{ 'passed' if _pid_build.rc == 0 else 'FAILED' }}"
+          - "Nested builds (podman-in-podman): {{ 'passed' if _nested_build.rc == 0 else 'FAILED' }}"

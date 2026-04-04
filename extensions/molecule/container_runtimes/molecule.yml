@@ -1,0 +1,63 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: extensions/molecule/provisioners/${PROVISIONER:-kubevirt}/requirements.yml
+    force: true
+driver:
+  name: default
+  options:
+    managed: true
+    ansible_connection_options:
+      connection: local
+platforms:
+  - name: ubuntu-24
+    kubevirt:
+      image: quay.io/containerdisks/ubuntu:24.04
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 4Gi
+      disk_size: 30Gi
+  - name: centos-stream-10
+    kubevirt:
+      image: quay.io/containerdisks/centos-stream:10
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 4Gi
+      disk_size: 30Gi
+  - name: fedora
+    kubevirt:
+      image: quay.io/containerdisks/fedora:latest
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 4Gi
+      disk_size: 30Gi
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+    create: ../provisioners/${PROVISIONER:-kubevirt}/create.yml
+    destroy: ../provisioners/${PROVISIONER:-kubevirt}/destroy.yml
+    prepare: ../provisioners/${PROVISIONER:-kubevirt}/prepare.yml
+    verify: verify.yml
+  inventory:
+    links:
+      group_vars: ../provisioners/${PROVISIONER:-kubevirt}/group_vars/
+verifier:
+  name: ansible
+scenario:
+  name: container_runtimes
+  test_sequence:
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy
