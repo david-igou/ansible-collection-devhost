@@ -1,0 +1,65 @@
+---
+argument_specs:
+  main:
+    short_description: Configure rootless Podman for the target user
+    description:
+      - Tunes kernel parameters for rootless containers.
+      - Configures subuid/subgid mappings.
+      - Enables lingering so user services survive logout.
+      - Deploys user-level containers.conf and storage.conf.
+      - Activates the podman socket in user scope.
+      - Optionally symlinks docker.sock to the podman socket.
+    options:
+      podman_rootless_subuid_start:
+        type: int
+        default: 100000
+        description: Starting subordinate UID value.
+      podman_rootless_subuid_count:
+        type: int
+        default: 65536
+        description: Number of subordinate UIDs and GIDs to allocate.
+      podman_rootless_user_namespaces_max:
+        type: int
+        default: 28633
+        description: Value for the user.max_user_namespaces sysctl.
+      podman_rootless_unprivileged_port_start:
+        type: int
+        default: 0
+        description: Value for the net.ipv4.ip_unprivileged_port_start sysctl.
+      podman_rootless_socket_symlink:
+        type: bool
+        default: true
+        description: Create /var/run/docker.sock symlink to the podman user socket.
+      podman_rootless_enable_linger:
+        type: bool
+        default: true
+        description: Enable loginctl lingering so user systemd services persist across sessions.
+      podman_rootless_configure_containers_conf:
+        type: bool
+        default: true
+        description: Deploy a user-level containers.conf under ~/.config/containers/.
+      podman_rootless_events_logger:
+        type: str
+        default: "file"
+        description: >-
+          Podman events logger backend. Set to "file" to avoid requiring
+          journald access in rootless mode.
+        choices:
+          - file
+          - journald
+          - none
+      podman_rootless_configure_storage_conf:
+        type: bool
+        default: false
+        description: Deploy a user-level storage.conf under ~/.config/containers/.
+      podman_rootless_storage_driver:
+        type: str
+        default: "overlay"
+        description: Podman storage driver for user-level storage.conf.
+      podman_rootless_storage_mount_program:
+        type: str
+        default: "/usr/bin/fuse-overlayfs"
+        description: >-
+          Path to fuse-overlayfs binary. Only used when
+          podman_rootless_configure_storage_conf is true.
+          Set to empty string to omit mount_program and use native overlay.

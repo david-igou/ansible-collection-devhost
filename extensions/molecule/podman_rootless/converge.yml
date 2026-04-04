@@ -1,7 +1,29 @@
 ---
 - name: Converge
   hosts: all
-  gather_facts: false
+  gather_facts: true
+  become: false
+
+  vars:
+    packages_install_onepassword: false
+    packages_install_github_cli: false
+    packages_install_claude_code: false
+    packages_install_cursor_agent: false
+    packages_install_kubectl: false
+    packages_install_helm: false
+    packages_install_kustomize: false
+    packages_install_virtctl: false
+    packages_install_pip_packages: false
+    packages_install_nodejs_pinned: false
+    packages_install_extra_packages: false
+
+  pre_tasks:
+    - name: Wait for cloud-init to finish
+      ansible.builtin.command:
+        cmd: cloud-init status --wait
+      changed_when: false
+      become: true
+      failed_when: false
 
   roles:
     - role: david_igou.devhost.podman_rootless

@@ -14,7 +14,7 @@ help: ## Show this help
 lint: ## Run ansible-lint
 	ansible-lint
 
-molecule: ## Run molecule converge (SCENARIO=packages PROVISIONER=podman)
+molecule: ## Run molecule test (SCENARIO=default PROVISIONER=podman)
 	PROVISIONER=$(PROVISIONER) molecule test -s $(or $(SCENARIO),default)
 
 molecule-kubevirt: ## Run molecule test against kubevirt (SCENARIO=default)

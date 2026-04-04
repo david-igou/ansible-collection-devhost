@@ -46,13 +46,42 @@
         - __podman_rootless_subgid_result.rc != 0
         - "'already exists' not in (__podman_rootless_subgid_result.stderr | default(''))"
 
+    - name: Enable lingering for user
+      ansible.builtin.command:
+        cmd: "loginctl enable-linger {{ ansible_facts.user_id }}"
+        creates: "/var/lib/systemd/linger/{{ ansible_facts.user_id }}"
+      when: podman_rootless_enable_linger
+
     - name: Create docker.sock symlink to podman socket
       ansible.builtin.file:
         src: "/run/user/{{ ansible_facts.user_uid }}/podman/podman.sock"
         dest: /var/run/docker.sock
         state: link
         force: true
+        follow: false
       when: podman_rootless_socket_symlink
+
+- name: Create containers config directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts.env.HOME }}/.config/containers"
+    state: directory
+    mode: "0755"
+
+- name: Deploy user containers.conf
+  ansible.builtin.template:
+    src: containers.conf.j2
+    dest: "{{ ansible_facts.env.HOME }}/.config/containers/containers.conf"
+    mode: "0644"
+  when: podman_rootless_configure_containers_conf
+  notify: Restart podman socket
+
+- name: Deploy user storage.conf
+  ansible.builtin.template:
+    src: storage.conf.j2
+    dest: "{{ ansible_facts.env.HOME }}/.config/containers/storage.conf"
+    mode: "0644"
+  when: podman_rootless_configure_storage_conf
+  notify: Restart podman socket
 
 - name: Enable podman socket for user
   ansible.builtin.systemd:
