@@ -26,4 +26,4 @@
       failed_when: false
 
   roles:
-    - role: david_igou.devhost.podman_rootless
+    - role: david_igou.devhost.podman

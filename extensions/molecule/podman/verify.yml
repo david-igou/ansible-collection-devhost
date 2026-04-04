@@ -5,9 +5,9 @@
   become: false
 
   tasks:
-    - name: Load podman_rootless role defaults
+    - name: Load podman role defaults
       ansible.builtin.include_vars:
-        file: ../../../roles/podman_rootless/defaults/main.yml
+        file: ../../../roles/podman/defaults/main.yml
 
     # -- Kernel tuning --
 
@@ -20,10 +20,10 @@
     - name: Assert user.max_user_namespaces matches expected value
       ansible.builtin.assert:
         that:
-          - _userns.stdout | int == podman_rootless_user_namespaces_max | int
+          - _userns.stdout | int == podman_user_namespaces_max | int
         fail_msg: >-
           user.max_user_namespaces is {{ _userns.stdout }},
-          expected {{ podman_rootless_user_namespaces_max }}
+          expected {{ podman_user_namespaces_max }}
 
     - name: Read net.ipv4.ip_unprivileged_port_start sysctl
       ansible.builtin.command:
@@ -34,10 +34,10 @@
     - name: Assert unprivileged port start matches expected value
       ansible.builtin.assert:
         that:
-          - _portstart.stdout | int == podman_rootless_unprivileged_port_start | int
+          - _portstart.stdout | int == podman_unprivileged_port_start | int
         fail_msg: >-
           net.ipv4.ip_unprivileged_port_start is {{ _portstart.stdout }},
-          expected {{ podman_rootless_unprivileged_port_start }}
+          expected {{ podman_unprivileged_port_start }}
 
     # -- Subordinate UID/GID mappings --
 
@@ -49,8 +49,8 @@
 
     - name: Assert subuid range is configured correctly
       vars:
-        __expected_start: "{{ podman_rootless_subuid_start }}"
-        __expected_count: "{{ podman_rootless_subuid_count }}"
+        __expected_start: "{{ podman_subuid_start }}"
+        __expected_count: "{{ podman_subuid_count }}"
         __subuid_content: "{{ _subuid_raw.content | b64decode }}"
       ansible.builtin.assert:
         that:
@@ -69,8 +69,8 @@
 
     - name: Assert subgid range is configured correctly
       vars:
-        __expected_start: "{{ podman_rootless_subuid_start }}"
-        __expected_count: "{{ podman_rootless_subuid_count }}"
+        __expected_start: "{{ podman_subuid_start }}"
+        __expected_count: "{{ podman_subuid_count }}"
         __subgid_content: "{{ _subgid_raw.content | b64decode }}"
       ansible.builtin.assert:
         that:
@@ -121,11 +121,11 @@
         that:
           - "'events_logger' in __conf_content"
           - >-
-            'events_logger = "' + podman_rootless_events_logger + '"'
+            'events_logger = "' + podman_events_logger + '"'
             in __conf_content
         fail_msg: >-
           containers.conf does not contain
-          events_logger = "{{ podman_rootless_events_logger }}".
+          events_logger = "{{ podman_events_logger }}".
           Content: {{ __conf_content }}
 
     # -- Podman socket --

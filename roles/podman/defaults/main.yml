@@ -1,0 +1,17 @@
+---
+podman_rootless: true
+podman_nested_support: false
+
+podman_subuid_start: 100000
+podman_subuid_count: 65536
+podman_user_namespaces_max: 28633
+podman_unprivileged_port_start: 0
+podman_docker_socket_symlink: true
+podman_enable_linger: true
+
+podman_configure_containers_conf: true
+podman_events_logger: "file"
+
+podman_configure_storage_conf: false
+podman_storage_driver: "overlay"
+podman_storage_mount_program: "/usr/bin/fuse-overlayfs"

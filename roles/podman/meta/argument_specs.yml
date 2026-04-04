@@ -1,7 +1,7 @@
 ---
 argument_specs:
   main:
-    short_description: Configure rootless Podman for the target user
+    short_description: Configure Podman for the target user
     description:
       - Tunes kernel parameters for rootless containers.
       - Configures subuid/subgid mappings.
@@ -10,35 +10,47 @@ argument_specs:
       - Activates the podman socket in user scope.
       - Optionally symlinks docker.sock to the podman socket.
     options:
-      podman_rootless_subuid_start:
+      podman_rootless:
+        type: bool
+        default: true
+        description: >-
+          Gate for rootless-specific tasks (sysctl, subuid/subgid, linger,
+          socket activation). When false, the role only deploys config files.
+      podman_nested_support:
+        type: bool
+        default: false
+        description: >-
+          Future: additional config for podman-in-podman guests.
+          Not yet implemented — placeholder to establish the interface.
+      podman_subuid_start:
         type: int
         default: 100000
         description: Starting subordinate UID value.
-      podman_rootless_subuid_count:
+      podman_subuid_count:
         type: int
         default: 65536
         description: Number of subordinate UIDs and GIDs to allocate.
-      podman_rootless_user_namespaces_max:
+      podman_user_namespaces_max:
         type: int
         default: 28633
         description: Value for the user.max_user_namespaces sysctl.
-      podman_rootless_unprivileged_port_start:
+      podman_unprivileged_port_start:
         type: int
         default: 0
         description: Value for the net.ipv4.ip_unprivileged_port_start sysctl.
-      podman_rootless_socket_symlink:
+      podman_docker_socket_symlink:
         type: bool
         default: true
         description: Create /var/run/docker.sock symlink to the podman user socket.
-      podman_rootless_enable_linger:
+      podman_enable_linger:
         type: bool
         default: true
         description: Enable loginctl lingering so user systemd services persist across sessions.
-      podman_rootless_configure_containers_conf:
+      podman_configure_containers_conf:
         type: bool
         default: true
         description: Deploy a user-level containers.conf under ~/.config/containers/.
-      podman_rootless_events_logger:
+      podman_events_logger:
         type: str
         default: "file"
         description: >-
@@ -48,18 +60,18 @@ argument_specs:
           - file
           - journald
           - none
-      podman_rootless_configure_storage_conf:
+      podman_configure_storage_conf:
         type: bool
         default: false
         description: Deploy a user-level storage.conf under ~/.config/containers/.
-      podman_rootless_storage_driver:
+      podman_storage_driver:
         type: str
         default: "overlay"
         description: Podman storage driver for user-level storage.conf.
-      podman_rootless_storage_mount_program:
+      podman_storage_mount_program:
         type: str
         default: "/usr/bin/fuse-overlayfs"
         description: >-
           Path to fuse-overlayfs binary. Only used when
-          podman_rootless_configure_storage_conf is true.
+          podman_configure_storage_conf is true.
           Set to empty string to omit mount_program and use native overlay.

@@ -1,11 +1,12 @@
 ---
 - name: System-level podman configuration
   become: true
+  when: podman_rootless
   block:
     - name: Set max user namespaces
       ansible.posix.sysctl:
         name: user.max_user_namespaces
-        value: "{{ podman_rootless_user_namespaces_max }}"
+        value: "{{ podman_user_namespaces_max }}"
         sysctl_set: true
         state: present
         reload: true
@@ -13,44 +14,44 @@
     - name: Allow unprivileged port binding
       ansible.posix.sysctl:
         name: net.ipv4.ip_unprivileged_port_start
-        value: "{{ podman_rootless_unprivileged_port_start }}"
+        value: "{{ podman_unprivileged_port_start }}"
         sysctl_set: true
         state: present
         reload: true
 
     - name: Configure subuid for user
       vars:
-        __podman_rootless_subuid_end: "{{ podman_rootless_subuid_start + podman_rootless_subuid_count - 1 }}"
+        __podman_subuid_end: "{{ podman_subuid_start + podman_subuid_count - 1 }}"
       ansible.builtin.command:
         cmd: >-
           usermod --add-subuids
-          {{ podman_rootless_subuid_start }}-{{ __podman_rootless_subuid_end }}
+          {{ podman_subuid_start }}-{{ __podman_subuid_end }}
           {{ ansible_facts.user_id }}
-      register: __podman_rootless_subuid_result
-      changed_when: __podman_rootless_subuid_result.rc == 0
+      register: __podman_subuid_result
+      changed_when: __podman_subuid_result.rc == 0
       failed_when:
-        - __podman_rootless_subuid_result.rc != 0
-        - "'already exists' not in (__podman_rootless_subuid_result.stderr | default(''))"
+        - __podman_subuid_result.rc != 0
+        - "'already exists' not in (__podman_subuid_result.stderr | default(''))"
 
     - name: Configure subgid for user
       vars:
-        __podman_rootless_subgid_end: "{{ podman_rootless_subuid_start + podman_rootless_subuid_count - 1 }}"
+        __podman_subgid_end: "{{ podman_subuid_start + podman_subuid_count - 1 }}"
       ansible.builtin.command:
         cmd: >-
           usermod --add-subgids
-          {{ podman_rootless_subuid_start }}-{{ __podman_rootless_subgid_end }}
+          {{ podman_subuid_start }}-{{ __podman_subgid_end }}
           {{ ansible_facts.user_id }}
-      register: __podman_rootless_subgid_result
-      changed_when: __podman_rootless_subgid_result.rc == 0
+      register: __podman_subgid_result
+      changed_when: __podman_subgid_result.rc == 0
       failed_when:
-        - __podman_rootless_subgid_result.rc != 0
-        - "'already exists' not in (__podman_rootless_subgid_result.stderr | default(''))"
+        - __podman_subgid_result.rc != 0
+        - "'already exists' not in (__podman_subgid_result.stderr | default(''))"
 
     - name: Enable lingering for user
       ansible.builtin.command:
         cmd: "loginctl enable-linger {{ ansible_facts.user_id }}"
         creates: "/var/lib/systemd/linger/{{ ansible_facts.user_id }}"
-      when: podman_rootless_enable_linger
+      when: podman_enable_linger
 
     - name: Create docker.sock symlink to podman socket
       ansible.builtin.file:
@@ -59,7 +60,7 @@
         state: link
         force: true
         follow: false
-      when: podman_rootless_socket_symlink
+      when: podman_docker_socket_symlink
 
 - name: Create containers config directory
   ansible.builtin.file:
@@ -72,7 +73,7 @@
     src: containers.conf.j2
     dest: "{{ ansible_facts.env.HOME }}/.config/containers/containers.conf"
     mode: "0644"
-  when: podman_rootless_configure_containers_conf
+  when: podman_configure_containers_conf
   notify: Restart podman socket
 
 - name: Deploy user storage.conf
@@ -80,7 +81,7 @@
     src: storage.conf.j2
     dest: "{{ ansible_facts.env.HOME }}/.config/containers/storage.conf"
     mode: "0644"
-  when: podman_rootless_configure_storage_conf
+  when: podman_configure_storage_conf
   notify: Restart podman socket
 
 - name: Enable podman socket for user
@@ -89,15 +90,16 @@
     enabled: true
     state: started
     scope: user
+  when: podman_rootless
   notify: Restart podman socket
 
 - name: Check podman storage driver
   ansible.builtin.command:
     cmd: podman info --format '{{ '{{' }}.Store.GraphDriverName{{ '}}' }}'
-  register: __podman_rootless_driver
+  register: __podman_driver
   changed_when: false
 
 - name: Warn if storage driver is not overlay
   ansible.builtin.debug:
-    msg: "WARNING: Podman storage driver is '{{ __podman_rootless_driver.stdout }}', expected 'overlay'. Performance may be degraded."
-  when: __podman_rootless_driver.stdout != 'overlay'
+    msg: "WARNING: Podman storage driver is '{{ __podman_driver.stdout }}', expected 'overlay'. Performance may be degraded."
+  when: __podman_driver.stdout != 'overlay'

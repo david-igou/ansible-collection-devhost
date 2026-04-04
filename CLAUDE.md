@@ -33,25 +33,25 @@ This is a Galaxy collection (namespace `david_igou`, name `devhost`). `galaxy.ym
 
 - **host_prep** — User-level setup (no `become`): creates bind-mount target directories, seed files (`~/.gitconfig`, `~/.claude.json`), git user/email config, GitHub SSH URL rewrite. Runs first since other roles may depend on directories it creates.
 - **packages** — All package installs (`become: true` for system packages). Uses `include_tasks: "{{ ansible_facts.os_family }}.yml"` to dispatch Debian vs RedHat package manager tasks. Shared post-install tasks (devcontainer CLI, Claude Code, Cursor agent) run without become.
-- **podman_rootless** — Kernel tuning via `ansible.posix.sysctl`, subuid/subgid configuration, podman socket activation (user scope), optional docker.sock symlink. Depends on `packages` role (declared in `meta/main.yml`).
+- **podman** — Podman host configuration: kernel tuning via `ansible.posix.sysctl`, subuid/subgid configuration, podman socket activation (user scope), optional docker.sock symlink. Rootless-specific tasks are gated behind `podman_rootless` (default `true`). Depends on `packages` role (declared in `meta/main.yml`).
 
 ### Key conventions
 
-- **Variable prefix**: Each role prefixes its variables with the role name (e.g., `host_prep_`, `packages_`, `podman_rootless_`). Internal register variables use a double-underscore prefix (e.g., `__podman_rootless_subuid_result`). Cross-role references use the owning role's prefix (e.g., `host_prep` references `packages_install_onepassword`).
+- **Variable prefix**: Each role prefixes its variables with the role name (e.g., `host_prep_`, `packages_`, `podman_`). Internal register variables use a double-underscore prefix (e.g., `__podman_subuid_result`). Cross-role references use the owning role's prefix (e.g., `host_prep` references `packages_install_onepassword`).
 - **Multi-distro dispatch**: Per-distro task files named `Debian.yml` / `RedHat.yml`, included via `ansible_facts.os_family`.
 - **Become strategy**: No `become: true` at play level. Each task declares it individually — package installs and system config use become; user-level tasks do not.
 - **Version pinning**: Renovate manages versions via `# renovate:` annotations in role defaults. See `renovate.json` for the custom manager regex.
 
 ### Playbook
 
-`playbooks/site.yml` is the entry point — runs `host_prep` → `packages` → `podman_rootless` in order.
+`playbooks/site.yml` is the entry point — runs `host_prep` → `packages` → `podman` in order.
 
 ## Testing
 
 ### Running molecule
 
 ```bash
-# Run a specific scenario (host_prep, packages, default, podman_rootless)
+# Run a specific scenario (host_prep, packages, default, podman)
 molecule test -s host_prep
 
 # Converge only (skip destroy — useful during development)
@@ -117,7 +117,7 @@ Do **not** remove the `verify` step from `molecule.yml` test sequences.
 
 ### CI scenarios
 
-CI runs `host_prep` and `packages` scenarios. `default` and `podman_rootless` are available locally but excluded from CI.
+CI runs `host_prep` and `packages` scenarios. `default` and `podman` are available locally but excluded from CI.
 
 ## Coding standards
 
@@ -169,8 +169,9 @@ Always use FQCNs for all modules and plugins: `ansible.builtin.copy`, not `copy`
 
 ## Git workflow
 
-- **Authentication**: Always use `gh auth setup-git` before pushing. The SSH key may not be available; `gh` provides credential handling via `GH_TOKEN`.
-- **Pushing**: Run `gh auth setup-git && git push` (or `git push -u origin HEAD` for new branches).
+- **Do not modify git remote URLs or global git config.** The remote is set to `git@github.com:` (SSH) for the repository owner. Never change it to HTTPS, and never run `gh auth setup-git` or configure credential helpers — these overwrite the SSH-based remote and break the owner's push access.
+- **Pushing with `GITHUB_TOKEN`/`GH_TOKEN`**: If you need to push and only have a token (no SSH key), use `gh` CLI directly instead of `git push`. For example: `gh pr create`, or push a branch via the GitHub API. **Do not reconfigure the remote or credential helper to make `git push` work with a token.**
+- **Pushing with SSH**: If an SSH key is available, just run `git push` — the remote is already configured for SSH.
 - **Pre-push gate**: Always run `ansible-lint` before pushing and fix any violations. Do not push code that fails linting.
 - **KubeVirt validation**: If the `KUBECONFIG` environment variable is set, run `make molecule-kubevirt` before pushing and ensure it passes. Do not push code that fails molecule-kubevirt tests when a cluster is available.
 

@@ -1,8 +1,0 @@
-# {{ ansible_managed }}
-[storage]
-driver = "{{ podman_rootless_storage_driver }}"
-{% if podman_rootless_storage_mount_program | length > 0 %}
-
-[storage.options.overlay]
-mount_program = "{{ podman_rootless_storage_mount_program }}"
-{% endif %}

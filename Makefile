@@ -2,7 +2,7 @@ COLLECTION_NAMESPACE := david_igou
 COLLECTION_NAME := devhost
 COLLECTION := $(COLLECTION_NAMESPACE).$(COLLECTION_NAME)
 
-MOLECULE_SCENARIOS := default host_prep packages podman_rootless
+MOLECULE_SCENARIOS := default host_prep packages podman
 PROVISIONER ?= podman
 
 .PHONY: help lint molecule molecule-kubevirt test collection-build collection-install clean

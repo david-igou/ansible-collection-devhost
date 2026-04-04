@@ -37,7 +37,7 @@ provisioner:
 verifier:
   name: ansible
 scenario:
-  name: podman_rootless
+  name: podman
   test_sequence:
     - dependency
     - syntax
