@@ -35,6 +35,18 @@ platforms:
       ansible_user: cloud-user
       memory: 4Gi
       disk_size: 30Gi
+  - name: fedora
+    podman:
+      image: docker.io/geerlingguy/docker-fedora43-ansible:latest
+      command: sleep 1d
+    kubevirt:
+      image: quay.io/containerdisks/fedora:latest
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 4Gi
+      disk_size: 30Gi
 provisioner:
   name: ansible
   playbooks:
