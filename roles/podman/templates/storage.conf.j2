@@ -1,6 +1,9 @@
 # {{ ansible_managed }}
 [storage]
 driver = "{{ podman_storage_driver }}"
+{% if podman_storage_graphroot | length > 0 %}
+graphroot = "{{ podman_storage_graphroot }}"
+{% endif %}
 {% if podman_storage_mount_program | length > 0 %}
 
 [storage.options.overlay]

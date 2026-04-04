@@ -76,6 +76,34 @@
   when: podman_configure_containers_conf
   notify: Restart podman socket
 
+- name: Verify fuse-overlayfs binary exists
+  ansible.builtin.stat:
+    path: "{{ podman_storage_mount_program }}"
+  register: __podman_fuse_overlayfs
+  when:
+    - podman_configure_storage_conf
+    - podman_storage_mount_program | length > 0
+
+- name: Fail if fuse-overlayfs not found
+  ansible.builtin.fail:
+    msg: >-
+      fuse-overlayfs not found at {{ podman_storage_mount_program }}.
+      Ensure fuse-overlayfs is installed or set podman_storage_mount_program
+      to the correct path (or empty string for native overlay).
+  when:
+    - podman_configure_storage_conf
+    - podman_storage_mount_program | length > 0
+    - not (__podman_fuse_overlayfs.stat.exists | default(false))
+
+- name: Create storage graphroot directory
+  ansible.builtin.file:
+    path: "{{ podman_storage_graphroot }}"
+    state: directory
+    mode: "0700"
+  when:
+    - podman_configure_storage_conf
+    - podman_storage_graphroot | length > 0
+
 - name: Deploy user storage.conf
   ansible.builtin.template:
     src: storage.conf.j2
@@ -102,4 +130,15 @@
 - name: Warn if storage driver is not overlay
   ansible.builtin.debug:
     msg: "WARNING: Podman storage driver is '{{ __podman_driver.stdout }}', expected 'overlay'. Performance may be degraded."
-  when: __podman_driver.stdout != 'overlay'
+  when: __podman_driver.stdout != "overlay"
+
+- name: Warn if active storage driver differs from configured
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: Active storage driver is '{{ __podman_driver.stdout }}'
+      but storage.conf configures '{{ podman_storage_driver }}'.
+      Run 'podman system reset' to apply the change.
+      This will remove all existing images and containers.
+  when:
+    - podman_configure_storage_conf
+    - __podman_driver.stdout != podman_storage_driver

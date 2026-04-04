@@ -128,6 +128,35 @@
           events_logger = "{{ podman_events_logger }}".
           Content: {{ __conf_content }}
 
+    # -- Storage configuration --
+
+    - name: Stat storage.conf
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.config/containers/storage.conf"
+      register: _storage_conf
+
+    - name: Assert storage.conf exists
+      ansible.builtin.assert:
+        that:
+          - _storage_conf.stat.exists
+        fail_msg: "storage.conf not deployed"
+
+    - name: Read storage.conf content
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts.env.HOME }}/.config/containers/storage.conf"
+      register: _storage_conf_raw
+
+    - name: Assert storage.conf contains expected driver and mount_program
+      vars:
+        __storage_content: "{{ _storage_conf_raw.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'driver = \"overlay\"' in __storage_content"
+          - "'fuse-overlayfs' in __storage_content"
+        fail_msg: >-
+          storage.conf does not contain expected driver config.
+          Content: {{ __storage_content }}
+
     # -- Podman socket --
 
     - name: Check podman socket unit is enabled # noqa: command-instead-of-module
@@ -299,6 +328,7 @@
           - "subgid configured: {{ ansible_facts.user_id in (_subgid_raw.content | b64decode) }}"
           - "lingering: {{ _linger.stat.exists }}"
           - "containers.conf: present"
+          - "storage.conf: {{ _storage_conf.stat.exists }}"
           - "podman.socket: {{ _socket_enabled.stdout }}"
           - "socket file: {{ _socket_file.stat.exists }}"
           - "API responsive: {{ (_api_response.stdout | from_json).host is defined }}"

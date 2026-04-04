@@ -62,7 +62,7 @@ argument_specs:
           - none
       podman_configure_storage_conf:
         type: bool
-        default: false
+        default: true
         description: Deploy a user-level storage.conf under ~/.config/containers/.
       podman_storage_driver:
         type: str
@@ -75,3 +75,10 @@ argument_specs:
           Path to fuse-overlayfs binary. Only used when
           podman_configure_storage_conf is true.
           Set to empty string to omit mount_program and use native overlay.
+      podman_storage_graphroot:
+        type: str
+        default: ""
+        description: >-
+          Override the graphroot path for rootless storage.
+          When set, the directory is created and graphroot is added to storage.conf.
+          Leave empty to use the default (~/.local/share/containers/storage).
