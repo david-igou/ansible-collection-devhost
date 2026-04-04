@@ -5,7 +5,7 @@ COLLECTION := $(COLLECTION_NAMESPACE).$(COLLECTION_NAME)
 MOLECULE_SCENARIOS := default host_prep packages podman docker
 PROVISIONER ?= podman
 
-.PHONY: help lint molecule molecule-kubevirt test collection-build collection-install clean
+.PHONY: help lint molecule molecule-kubevirt test collection-build collection-install galaxy-import clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -27,6 +27,11 @@ collection-build: ## Build the collection tarball
 
 collection-install: collection-build ## Build and install the collection locally
 	ansible-galaxy collection install $(COLLECTION_NAMESPACE)-$(COLLECTION_NAME)-*.tar.gz --force
+
+galaxy-import: ## Run galaxy-importer locally (pip install galaxy-importer)
+	@echo '[galaxy-importer]\nCHECK_REQUIRED_TAGS=True' > /tmp/galaxy-importer.cfg
+	GALAXY_IMPORTER_CONFIG=/tmp/galaxy-importer.cfg \
+		python3 -m galaxy_importer.main --git-clone-path . --output-path /tmp
 
 clean: ## Remove build artifacts
 	rm -f $(COLLECTION_NAMESPACE)-$(COLLECTION_NAME)-*.tar.gz

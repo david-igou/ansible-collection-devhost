@@ -3,10 +3,11 @@
     "allow": [
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
-      "Bash(gh api:*)",
-      "Bash(molecule create:*)",
-      "Bash(molecule destroy:*)",
-      "Bash(git checkout:*)"
+      "Bash(gh:*)",
+      "Bash(molecule:*)",
+      "Bash(make:*)",
+      "Bash(git checkout:*)",
+      "Edit(roles/**)"
     ]
   }
 }
