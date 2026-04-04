@@ -41,6 +41,7 @@
         name: docker.service
         enabled: true
         state: started
+      when: not docker_rootless
 
 - name: Configure rootless Docker
   when:

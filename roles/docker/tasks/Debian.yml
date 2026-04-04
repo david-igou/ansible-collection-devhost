@@ -1,4 +1,17 @@
 ---
+- name: Check Docker CE repository is configured
+  ansible.builtin.command:
+    cmd: apt-cache policy docker-ce
+  register: __docker_repo_check
+  changed_when: false
+
+- name: Fail if Docker CE repository is not configured
+  ansible.builtin.fail:
+    msg: >-
+      Docker CE packages are not available. Ensure the packages role
+      has been run with packages_install_docker_cli: true.
+  when: "'docker-ce' not in __docker_repo_check.stdout or 'Candidate: (none)' in __docker_repo_check.stdout"
+
 - name: Install Docker daemon packages
   ansible.builtin.apt:
     name:
