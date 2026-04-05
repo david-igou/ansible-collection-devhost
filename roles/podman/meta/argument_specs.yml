@@ -20,8 +20,11 @@ argument_specs:
         type: bool
         default: false
         description: >-
-          Future: additional config for podman-in-podman guests.
-          Not yet implemented — placeholder to establish the interface.
+          Enable host-side configuration for podman-in-podman (nested containers).
+          Adds kernel.unprivileged_userns_clone sysctl on Debian-family systems
+          and optionally creates a dedicated storage directory for inner podman
+          instances. Does not affect container launch flags — those are runtime
+          decisions made by the caller.
       podman_subuid_start:
         type: int
         default: 100000
@@ -82,3 +85,12 @@ argument_specs:
           Override the graphroot path for rootless storage.
           When set, the directory is created and graphroot is added to storage.conf.
           Leave empty to use the default (~/.local/share/containers/storage).
+      podman_nested_storage_path:
+        type: str
+        default: ""
+        description: >-
+          Path to a host directory that can be bind-mounted into containers as
+          /var/lib/containers/storage for nested podman. When non-empty, the
+          directory is created with mode 0700. Requires podman_nested_support
+          to be true. Users mount it at runtime via
+          -v <path>:/var/lib/containers/storage:Z.

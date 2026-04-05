@@ -16,3 +16,4 @@ podman_configure_storage_conf: true
 podman_storage_driver: "overlay"
 podman_storage_mount_program: "/usr/bin/fuse-overlayfs"
 podman_storage_graphroot: ""
+podman_nested_storage_path: ""

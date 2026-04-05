@@ -62,6 +62,27 @@
         follow: false
       when: podman_docker_socket_symlink
 
+- name: Nested podman host configuration
+  become: true
+  when: podman_nested_support
+  block:
+    - name: Enable unprivileged user namespace cloning
+      ansible.posix.sysctl:
+        name: kernel.unprivileged_userns_clone
+        value: "1"
+        sysctl_set: true
+        state: present
+        reload: true
+      when: ansible_facts.os_family == "Debian"
+      failed_when: false
+
+    - name: Create nested podman storage directory
+      ansible.builtin.file:
+        path: "{{ podman_nested_storage_path }}"
+        state: directory
+        mode: "0700"
+      when: podman_nested_storage_path | length > 0
+
 - name: Create containers config directory
   ansible.builtin.file:
     path: "{{ ansible_facts.env.HOME }}/.config/containers"

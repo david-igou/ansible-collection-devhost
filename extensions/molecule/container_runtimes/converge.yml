@@ -19,6 +19,8 @@
     packages_install_extra_packages: false
     podman_docker_socket_symlink: false
     podman_configure_storage_conf: true
+    podman_nested_support: true
+    podman_nested_storage_path: "/tmp/nested-podman-storage"
 
   pre_tasks:
     - name: Wait for cloud-init to finish

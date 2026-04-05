@@ -161,6 +161,44 @@
           Content: {{ __storage_content }}
 
     # ===================================================================
+    # Section 1b — Nested podman host configuration
+    # ===================================================================
+
+    - name: Read kernel.unprivileged_userns_clone sysctl
+      ansible.builtin.command:
+        cmd: sysctl -n kernel.unprivileged_userns_clone
+      register: _userns_clone
+      changed_when: false
+      failed_when: false
+
+    - name: Assert kernel.unprivileged_userns_clone is enabled on Debian
+      ansible.builtin.assert:
+        that:
+          - _userns_clone.stdout | int == 1
+        fail_msg: >-
+          kernel.unprivileged_userns_clone is {{ _userns_clone.stdout }},
+          expected 1
+      when:
+        - ansible_facts.os_family == "Debian"
+        - _userns_clone.rc == 0
+
+    - name: Check nested podman storage directory exists
+      ansible.builtin.stat:
+        path: /tmp/nested-podman-storage
+      register: _nested_dir
+
+    - name: Assert nested podman storage directory exists
+      ansible.builtin.assert:
+        that:
+          - _nested_dir.stat.exists
+          - _nested_dir.stat.isdir
+          - _nested_dir.stat.mode == "0700"
+        fail_msg: >-
+          /tmp/nested-podman-storage does not exist or has wrong mode.
+          exists={{ _nested_dir.stat.exists | default(false) }},
+          mode={{ _nested_dir.stat.mode | default('unknown') }}
+
+    # ===================================================================
     # Section 2 — Docker CE daemon
     # ===================================================================
 
@@ -749,6 +787,7 @@
       ansible.builtin.debug:
         msg:
           - "Podman rootless: passed"
+          - "Nested podman host config: passed"
           - "Docker CE: passed"
           - "Coexistence: passed"
           - "Rootless podman lifecycle: passed"
