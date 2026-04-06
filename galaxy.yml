@@ -28,6 +28,7 @@ build_ignore:
   - .gitignore
   - .github
   - .vscode
+  - .idea
   - .devcontainer
   - .pre-commit-config.yaml
   - .prettierignore

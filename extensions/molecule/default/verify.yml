@@ -71,6 +71,75 @@
           - _git_email.stdout == "test@example.com"
         fail_msg: "git user.email not set correctly"
 
+    - name: Verify SSH config exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.ssh/config"
+      register: _ssh_config
+
+    - name: Assert SSH config
+      ansible.builtin.assert:
+        that:
+          - _ssh_config.stat.exists
+          - _ssh_config.stat.mode == "0600"
+        fail_msg: "~/.ssh/config does not exist or has wrong permissions"
+
+    - name: Read SSH config content
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts.env.HOME }}/.ssh/config"
+      register: _ssh_config_content
+
+    - name: Assert SSH config content
+      ansible.builtin.assert:
+        that:
+          - "'StrictHostKeyChecking no' in (_ssh_config_content.content | b64decode)"
+        fail_msg: "SSH config does not contain expected content"
+
+    - name: Verify bashrc exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.bashrc"
+      register: _bashrc
+
+    - name: Assert bashrc
+      ansible.builtin.assert:
+        that:
+          - _bashrc.stat.exists
+          - _bashrc.stat.mode == "0644"
+        fail_msg: "~/.bashrc does not exist or has wrong permissions"
+
+    - name: Read bashrc content
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts.env.HOME }}/.bashrc"
+      register: _bashrc_content
+
+    - name: Assert bashrc content
+      ansible.builtin.assert:
+        that:
+          - "'export EDITOR=vim' in (_bashrc_content.content | b64decode)"
+        fail_msg: "bashrc does not contain expected content"
+
+    - name: Verify 1Password service account token exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.config/op/service-account-token"
+      register: _op_token
+
+    - name: Assert 1Password service account token
+      ansible.builtin.assert:
+        that:
+          - _op_token.stat.exists
+          - _op_token.stat.mode == "0600"
+        fail_msg: "~/.config/op/service-account-token does not exist or has wrong permissions"
+
+    - name: Read 1Password service account token content
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts.env.HOME }}/.config/op/service-account-token"
+      register: _op_token_content
+
+    - name: Assert 1Password service account token content
+      ansible.builtin.assert:
+        that:
+          - "(_op_token_content.content | b64decode) == 'test-token-value'"
+        fail_msg: "1Password token does not match expected value"
+
     - name: Load packages role defaults
       ansible.builtin.include_vars:
         file: ../../../roles/packages/defaults/main.yml
@@ -218,6 +287,9 @@
           - "workspace: {{ _workspace.stat.exists }}"
           - "git user.name: {{ _git_name.stdout }}"
           - "git user.email: {{ _git_email.stdout }}"
+          - "ssh config: {{ _ssh_config.stat.exists }} (mode={{ _ssh_config.stat.mode }})"
+          - "bashrc: {{ _bashrc.stat.exists }} (mode={{ _bashrc.stat.mode }})"
+          - "op token: {{ _op_token.stat.exists }} (mode={{ _op_token.stat.mode }})"
           - "vim: {{ _vim.stdout_lines[0] }}"
           - "tmux: {{ _tmux.stdout }}"
           - "nmap: {{ _nmap.stdout_lines[0] }}"

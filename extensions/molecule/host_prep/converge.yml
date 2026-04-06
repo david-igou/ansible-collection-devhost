@@ -7,7 +7,7 @@
   vars:
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
-    packages_install_onepassword: false
+    packages_install_onepassword: true
 
   pre_tasks:
     - name: Update apt cache
@@ -23,4 +23,5 @@
       become: true
 
   roles:
+    - role: david_igou.devhost.packages
     - role: david_igou.devhost.host_prep

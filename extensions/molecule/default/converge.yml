@@ -18,6 +18,23 @@
     packages_install_pip_packages: true
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
+    host_prep_ssh_config: |
+      Host *
+        StrictHostKeyChecking no
+    host_prep_bashrc: |
+      # Test bashrc
+      export EDITOR=vim
+    host_prep_onepassword_service_account_token: "test-token-value"
+    host_prep_devcontainer_repository: "git@github.com:igou-io/igou-devenv.git"
+
+    # The repositories to clone into the workspace, cloned to {{ ansible_facts.env.HOME }}/workspace/
+    host_prep_workspace_repositories:
+      - "git@github.com:igou-io/igou-ansible.git"
+      - "git@github.com:igou-io/igou-openshift.git"
+      - "git@github.com:igou-io/igou-containers.git"
+      - "git@github.com:igou-io/igou-inventory.git"
+      - "git@github.com:igou-io/igou-infrastructure.git"
+
 
   roles:
     - role: david_igou.devhost.packages

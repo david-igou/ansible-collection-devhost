@@ -14,6 +14,70 @@
         file: ../../../roles/docker/defaults/main.yml
 
     # ===================================================================
+    # Section 0 — Host prep
+    # ===================================================================
+
+    - name: Verify workspace directory exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/workspace"
+      register: _workspace
+
+    - name: Assert workspace directory
+      ansible.builtin.assert:
+        that:
+          - _workspace.stat.exists
+          - _workspace.stat.isdir
+        fail_msg: "~/workspace directory does not exist"
+
+    - name: Verify SSH config exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.ssh/config"
+      register: _ssh_config
+
+    - name: Assert SSH config
+      ansible.builtin.assert:
+        that:
+          - _ssh_config.stat.exists
+          - _ssh_config.stat.mode == "0600"
+        fail_msg: "~/.ssh/config does not exist or has wrong permissions"
+
+    - name: Verify bashrc exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.bashrc"
+      register: _bashrc
+
+    - name: Assert bashrc
+      ansible.builtin.assert:
+        that:
+          - _bashrc.stat.exists
+          - _bashrc.stat.mode == "0644"
+        fail_msg: "~/.bashrc does not exist or has wrong permissions"
+
+    - name: Verify 1Password service account token exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.config/op/service-account-token"
+      register: _op_token
+
+    - name: Assert 1Password service account token
+      ansible.builtin.assert:
+        that:
+          - _op_token.stat.exists
+          - _op_token.stat.mode == "0600"
+        fail_msg: "~/.config/op/service-account-token does not exist or has wrong permissions"
+
+    - name: Verify gitconfig has user.name # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: git config --global user.name
+      register: _git_name
+      changed_when: false
+
+    - name: Assert git user.name
+      ansible.builtin.assert:
+        that:
+          - _git_name.stdout == "Test User"
+        fail_msg: "git user.name not set correctly"
+
+    # ===================================================================
     # Section 1 — Podman rootless fundamentals
     # ===================================================================
 
@@ -307,23 +371,23 @@
           - _podman_version.rc == 0
         fail_msg: "podman --version failed: {{ _podman_version.stderr }}"
 
-    - name: Pull alpine via podman
+    - name: Pull public.ecr.aws/docker/library/alpine via podman
       ansible.builtin.command:
-        cmd: podman pull --quiet docker.io/library/alpine:latest
+        cmd: podman pull --quiet public.ecr.aws/docker/library/alpine:latest
       changed_when: false
 
-    - name: Pull alpine via docker
+    - name: Pull public.ecr.aws/docker/library/alpine via docker
       ansible.builtin.command:
         argv:
           - sg
           - docker
           - -c
-          - "docker pull --quiet alpine:latest"
+          - "docker pull --quiet public.ecr.aws/docker/library/alpine:latest"
       changed_when: false
 
     - name: Run container via podman
       ansible.builtin.command:
-        cmd: podman run --rm docker.io/library/alpine:latest echo podman-ok
+        cmd: podman run --rm public.ecr.aws/docker/library/alpine:latest echo podman-ok
       register: _podman_run
       changed_when: false
 
@@ -339,7 +403,7 @@
           - sg
           - docker
           - -c
-          - "docker run --rm alpine echo docker-ok"
+          - "docker run --rm public.ecr.aws/docker/library/alpine:latest echo docker-ok"
       register: _docker_run
       changed_when: false
 
@@ -349,19 +413,19 @@
           - _docker_run.stdout == "docker-ok"
         fail_msg: "docker output was '{{ _docker_run.stdout }}', expected 'docker-ok'"
 
-    - name: List podman alpine image IDs
+    - name: List podman public.ecr.aws/docker/library/alpine image IDs
       ansible.builtin.command:
-        cmd: podman images --quiet docker.io/library/alpine
+        cmd: podman images --quiet public.ecr.aws/docker/library/alpine
       register: _podman_images
       changed_when: false
 
-    - name: List docker alpine image IDs
+    - name: List docker public.ecr.aws/docker/library/alpine image IDs
       ansible.builtin.command:
         argv:
           - sg
           - docker
           - -c
-          - "docker images --quiet alpine"
+          - "docker images --quiet public.ecr.aws/docker/library/alpine:latest"
       register: _docker_images
       changed_when: false
 
@@ -381,7 +445,7 @@
 
     - name: Run rootless container with userns=keep-id
       ansible.builtin.command:
-        cmd: podman run --rm --userns=keep-id docker.io/library/alpine:latest id -u
+        cmd: podman run --rm --userns=keep-id public.ecr.aws/docker/library/alpine:latest id -u
       register: _keepid
       changed_when: false
 
@@ -404,7 +468,7 @@
         cmd: >-
           podman run --rm --userns=keep-id
           -v /tmp/rootless-vol-test:/mnt/testfile:z
-          docker.io/library/alpine:latest cat /mnt/testfile
+          public.ecr.aws/docker/library/alpine:latest cat /mnt/testfile
       register: _volmount
       changed_when: false
 
@@ -444,7 +508,7 @@
 
     - name: Run privileged podman container
       ansible.builtin.command:
-        cmd: podman run --rm --privileged docker.io/library/alpine:latest cat /proc/self/status
+        cmd: podman run --rm --privileged public.ecr.aws/docker/library/alpine:latest cat /proc/self/status
       register: _podman_priv
       changed_when: false
 
@@ -460,7 +524,7 @@
           - sg
           - docker
           - -c
-          - "docker run --rm --privileged alpine cat /proc/self/status"
+          - "docker run --rm --privileged public.ecr.aws/docker/library/alpine cat /proc/self/status"
       register: _docker_priv
       changed_when: false
 
@@ -497,7 +561,7 @@
     - name: Create Containerfile for nested build tests
       ansible.builtin.copy:
         content: |
-          FROM alpine
+          FROM public.ecr.aws/docker/library/alpine
           RUN echo built
         dest: /tmp/buildctx/Containerfile
         mode: "0644"
@@ -506,32 +570,34 @@
     # Section 7 — Nested podman (podman-in-podman)
     # ===================================================================
 
+    # --- Hard requirement: privileged nesting must work on all distros ---
+
     - name: Run podman inside a privileged podman container
       ansible.builtin.command:
         cmd: >-
           podman run --rm --privileged
           quay.io/podman/stable
-          podman run --rm alpine echo nested-ok
+          podman run --rm public.ecr.aws/docker/library/alpine echo nested-ok
       register: _nested_priv
       changed_when: false
-      failed_when: false
 
-    - name: Validate nested privileged podman
-      block:
-        - name: Assert nested privileged podman worked
-          ansible.builtin.assert:
-            that:
-              - "'nested-ok' in _nested_priv.stdout"
-            fail_msg: >-
-              Nested privileged podman failed.
-              stdout: {{ _nested_priv.stdout }}
-              stderr: {{ _nested_priv.stderr }}
-      rescue:
-        - name: Note nested privileged podman limitation
-          ansible.builtin.debug:
-            msg: >-
-              Known limitation on {{ ansible_distribution }}:
-              nested privileged podman failed.
+    - name: Assert nested privileged podman worked
+      ansible.builtin.assert:
+        that:
+          - "'nested-ok' in _nested_priv.stdout"
+        fail_msg: >-
+          Nested privileged podman failed.
+          stdout: {{ _nested_priv.stdout }}
+          stderr: {{ _nested_priv.stderr }}
+
+    # --- Exploratory: targeted capabilities (distro/kernel-dependent) ---
+
+    - name: Initialize soft test results
+      ansible.builtin.set_fact:
+        _soft_nested_caps: false
+        _soft_nested_vfs: false
+        _soft_pid_caps: false
+        _soft_pid_vfs: false
 
     - name: Run podman inside a container with targeted capabilities
       ansible.builtin.command:
@@ -541,12 +607,12 @@
           --device /dev/fuse
           --security-opt unmask=/proc/*
           quay.io/podman/stable
-          podman run --rm alpine echo nested-caps-ok
+          podman run --rm public.ecr.aws/docker/library/alpine echo nested-caps-ok
       register: _nested_caps
       changed_when: false
       failed_when: false
 
-    - name: Validate nested targeted-caps podman
+    - name: Evaluate nested targeted-caps podman
       block:
         - name: Assert nested targeted-caps podman worked
           ansible.builtin.assert:
@@ -556,6 +622,10 @@
               Nested targeted-caps podman failed.
               stdout: {{ _nested_caps.stdout }}
               stderr: {{ _nested_caps.stderr }}
+
+        - name: Record nested targeted-caps success
+          ansible.builtin.set_fact:
+            _soft_nested_caps: true
       rescue:
         - name: Note nested targeted-caps limitation
           ansible.builtin.debug:
@@ -564,18 +634,20 @@
               nested podman with targeted capabilities fails
               due to SELinux/kernel restrictions on proc mount.
 
+    # --- Exploratory: vfs storage driver (distro/kernel-dependent) ---
+
     - name: Run podman inside a container using vfs storage driver
       ansible.builtin.command:
         cmd: >-
           podman run --rm
           --security-opt unmask=/proc/*
           quay.io/podman/stable
-          podman --storage-driver vfs run --rm alpine echo nested-vfs-ok
+          podman --storage-driver vfs run --rm public.ecr.aws/docker/library/alpine echo nested-vfs-ok
       register: _nested_vfs
       changed_when: false
       failed_when: false
 
-    - name: Validate nested vfs podman
+    - name: Evaluate nested vfs podman
       block:
         - name: Assert nested vfs podman worked
           ansible.builtin.assert:
@@ -585,6 +657,10 @@
               Nested vfs podman failed.
               stdout: {{ _nested_vfs.stdout }}
               stderr: {{ _nested_vfs.stderr }}
+
+        - name: Record nested vfs success
+          ansible.builtin.set_fact:
+            _soft_nested_vfs: true
       rescue:
         - name: Note nested vfs podman limitation
           ansible.builtin.debug:
@@ -597,33 +673,28 @@
     # Section 8 — Podman inside Docker
     # ===================================================================
 
+    # --- Hard requirement: privileged podman-in-docker must work ---
+
     - name: Run podman inside a privileged Docker container
       ansible.builtin.command:
         argv:
           - sg
           - docker
           - -c
-          - "docker run --rm --privileged quay.io/podman/stable podman run --rm alpine echo podman-in-docker-ok"
+          - "docker run --rm --privileged quay.io/podman/stable podman run --rm public.ecr.aws/docker/library/alpine echo podman-in-docker-ok"
       register: _pid_priv
       changed_when: false
-      failed_when: false
 
-    - name: Validate podman-in-docker privileged
-      block:
-        - name: Assert podman-in-docker privileged worked
-          ansible.builtin.assert:
-            that:
-              - "'podman-in-docker-ok' in _pid_priv.stdout"
-            fail_msg: >-
-              Podman-in-docker privileged failed.
-              stdout: {{ _pid_priv.stdout }}
-              stderr: {{ _pid_priv.stderr }}
-      rescue:
-        - name: Note podman-in-docker privileged limitation
-          ansible.builtin.debug:
-            msg: >-
-              Known limitation on {{ ansible_distribution }}:
-              podman-in-docker privileged failed.
+    - name: Assert podman-in-docker privileged worked
+      ansible.builtin.assert:
+        that:
+          - "'podman-in-docker-ok' in _pid_priv.stdout"
+        fail_msg: >-
+          Podman-in-docker privileged failed.
+          stdout: {{ _pid_priv.stdout }}
+          stderr: {{ _pid_priv.stderr }}
+
+    # --- Exploratory: targeted capabilities (distro/kernel-dependent) ---
 
     - name: Run podman inside a Docker container with targeted capabilities
       ansible.builtin.command:
@@ -637,12 +708,12 @@
             --device /dev/fuse
             --security-opt 'unmask=/proc/*'
             quay.io/podman/stable
-            podman run --rm alpine echo podman-in-docker-caps-ok
+            podman run --rm public.ecr.aws/docker/library/alpine echo podman-in-docker-caps-ok
       register: _pid_caps
       changed_when: false
       failed_when: false
 
-    - name: Validate podman-in-docker targeted-caps
+    - name: Evaluate podman-in-docker targeted-caps
       block:
         - name: Assert podman-in-docker targeted-caps worked
           ansible.builtin.assert:
@@ -652,6 +723,10 @@
               Podman-in-docker targeted-caps failed.
               stdout: {{ _pid_caps.stdout }}
               stderr: {{ _pid_caps.stderr }}
+
+        - name: Record podman-in-docker targeted-caps success
+          ansible.builtin.set_fact:
+            _soft_pid_caps: true
       rescue:
         - name: Note podman-in-docker targeted-caps limitation
           ansible.builtin.debug:
@@ -659,6 +734,8 @@
               Known limitation on {{ ansible_distribution }}:
               podman-in-docker with targeted capabilities fails
               due to SELinux/kernel restrictions.
+
+    # --- Exploratory: vfs storage driver (distro/kernel-dependent) ---
 
     - name: Run podman inside a Docker container using vfs storage driver
       ansible.builtin.command:
@@ -670,12 +747,12 @@
             docker run --rm
             --security-opt 'unmask=/proc/*'
             quay.io/podman/stable
-            podman --storage-driver vfs run --rm alpine echo podman-in-docker-vfs-ok
+            podman --storage-driver vfs run --rm public.ecr.aws/docker/library/alpine echo podman-in-docker-vfs-ok
       register: _pid_vfs
       changed_when: false
       failed_when: false
 
-    - name: Validate podman-in-docker vfs
+    - name: Evaluate podman-in-docker vfs
       block:
         - name: Assert podman-in-docker vfs worked
           ansible.builtin.assert:
@@ -685,6 +762,10 @@
               Podman-in-docker vfs failed.
               stdout: {{ _pid_vfs.stdout }}
               stderr: {{ _pid_vfs.stderr }}
+
+        - name: Record podman-in-docker vfs success
+          ansible.builtin.set_fact:
+            _soft_pid_vfs: true
       rescue:
         - name: Note podman-in-docker vfs limitation
           ansible.builtin.debug:
@@ -692,6 +773,8 @@
               Known limitation on {{ ansible_distribution }}:
               podman-in-docker with vfs storage driver fails
               due to kernel restrictions.
+
+    # --- Hard requirement: privileged build must work ---
 
     - name: Build container image with podman inside a Docker container
       ansible.builtin.command:
@@ -702,27 +785,20 @@
           - "docker run --rm --privileged -v /tmp/buildctx:/build quay.io/podman/stable podman build -t test-build-in-docker /build"
       register: _pid_build
       changed_when: false
-      failed_when: false
 
-    - name: Validate podman-in-docker build
-      block:
-        - name: Assert podman-in-docker build succeeded
-          ansible.builtin.assert:
-            that:
-              - _pid_build.rc == 0
-            fail_msg: >-
-              Podman-in-docker build failed.
-              stderr: {{ _pid_build.stderr }}
-      rescue:
-        - name: Note podman-in-docker build limitation
-          ansible.builtin.debug:
-            msg: >-
-              Known limitation on {{ ansible_distribution }}:
-              podman-in-docker build failed.
+    - name: Assert podman-in-docker build succeeded
+      ansible.builtin.assert:
+        that:
+          - _pid_build.rc == 0
+        fail_msg: >-
+          Podman-in-docker build failed.
+          stderr: {{ _pid_build.stderr }}
 
     # ===================================================================
     # Section 9 — Nested container builds (podman-in-podman)
     # ===================================================================
+
+    # --- Hard requirement: privileged build must work ---
 
     - name: Build container image inside a privileged podman container
       ansible.builtin.command:
@@ -733,23 +809,20 @@
           podman build -t test-build /build
       register: _nested_build
       changed_when: false
-      failed_when: false
 
-    - name: Validate nested privileged build
-      block:
-        - name: Assert nested privileged build succeeded
-          ansible.builtin.assert:
-            that:
-              - _nested_build.rc == 0
-            fail_msg: >-
-              Nested privileged build failed.
-              stderr: {{ _nested_build.stderr }}
-      rescue:
-        - name: Note nested privileged build limitation
-          ansible.builtin.debug:
-            msg: >-
-              Known limitation on {{ ansible_distribution }}:
-              nested privileged build failed.
+    - name: Assert nested privileged build succeeded
+      ansible.builtin.assert:
+        that:
+          - _nested_build.rc == 0
+        fail_msg: >-
+          Nested privileged build failed.
+          stderr: {{ _nested_build.stderr }}
+
+    # --- Exploratory: vfs build (distro/kernel-dependent) ---
+
+    - name: Initialize soft vfs build result
+      ansible.builtin.set_fact:
+        _soft_nested_vfs_build: false
 
     - name: Build container image using vfs storage driver
       ansible.builtin.command:
@@ -763,7 +836,7 @@
       changed_when: false
       failed_when: false
 
-    - name: Validate nested vfs build
+    - name: Evaluate nested vfs build
       block:
         - name: Assert nested vfs build succeeded
           ansible.builtin.assert:
@@ -772,6 +845,10 @@
             fail_msg: >-
               Nested vfs build failed.
               stderr: {{ _nested_vfs_build.stderr }}
+
+        - name: Record nested vfs build success
+          ansible.builtin.set_fact:
+            _soft_nested_vfs_build: true
       rescue:
         - name: Note nested vfs build limitation
           ansible.builtin.debug:
@@ -786,6 +863,8 @@
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
+          - "=== Hard requirements (playbook fails if any miss) ==="
+          - "Host prep: passed"
           - "Podman rootless: passed"
           - "Nested podman host config: passed"
           - "Docker CE: passed"
@@ -793,11 +872,14 @@
           - "Rootless podman lifecycle: passed"
           - "Rootless Docker: skipped (see #19 section 5)"
           - "Privileged containers: passed"
-          - "Nested podman (privileged): {{ 'passed' if 'nested-ok' in _nested_priv.stdout else 'FAILED' }}"
-          - "Nested podman (targeted caps): {{ 'passed' if 'nested-caps-ok' in _nested_caps.stdout else 'FAILED' }}"
-          - "Nested podman (vfs): {{ 'passed' if 'nested-vfs-ok' in _nested_vfs.stdout else 'FAILED' }}"
-          - "Podman-in-Docker (privileged): {{ 'passed' if 'podman-in-docker-ok' in _pid_priv.stdout else 'FAILED' }}"
-          - "Podman-in-Docker (targeted caps): {{ 'passed' if 'podman-in-docker-caps-ok' in _pid_caps.stdout else 'FAILED' }}"
-          - "Podman-in-Docker (vfs): {{ 'passed' if 'podman-in-docker-vfs-ok' in _pid_vfs.stdout else 'FAILED' }}"
-          - "Podman-in-Docker build: {{ 'passed' if _pid_build.rc == 0 else 'FAILED' }}"
-          - "Nested builds (podman-in-podman): {{ 'passed' if _nested_build.rc == 0 else 'FAILED' }}"
+          - "Nested podman (privileged): passed"
+          - "Podman-in-Docker (privileged): passed"
+          - "Podman-in-Docker build (privileged): passed"
+          - "Nested build (podman-in-podman privileged): passed"
+          - ""
+          - "=== Exploratory (distro/kernel-dependent, does not fail playbook) ==="
+          - "Nested podman (targeted caps): {{ 'passed' if _soft_nested_caps else 'not supported' }}"
+          - "Nested podman (vfs): {{ 'passed' if _soft_nested_vfs else 'not supported' }}"
+          - "Podman-in-Docker (targeted caps): {{ 'passed' if _soft_pid_caps else 'not supported' }}"
+          - "Podman-in-Docker (vfs): {{ 'passed' if _soft_pid_vfs else 'not supported' }}"
+          - "Nested vfs build: {{ 'passed' if _soft_nested_vfs_build else 'not supported' }}"

@@ -17,6 +17,17 @@
     packages_install_pip_packages: false
     packages_install_nodejs_pinned: false
     packages_install_extra_packages: false
+    host_prep_git_user_name: "Test User"
+    host_prep_git_user_email: "test@example.com"
+    host_prep_ssh_config: |
+      Host *
+        StrictHostKeyChecking no
+    host_prep_bashrc: |
+      # Test bashrc
+      export EDITOR=vim
+    host_prep_onepassword_service_account_token: "test-token-value"
+    host_prep_devcontainer_repository: ""
+    host_prep_workspace_repositories: []
     podman_docker_socket_symlink: false
     podman_configure_storage_conf: true
     podman_nested_support: true
@@ -32,5 +43,6 @@
 
   roles:
     - role: david_igou.devhost.packages
+    - role: david_igou.devhost.host_prep
     - role: david_igou.devhost.podman
     - role: david_igou.devhost.docker

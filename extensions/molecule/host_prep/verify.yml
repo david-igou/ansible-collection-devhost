@@ -86,3 +86,4 @@
           - "git user.name: {{ _git_name.stdout }}"
           - "git user.email: {{ _git_email.stdout }}"
           - "git ssh rewrite: {{ _git_ssh_rewrite.stdout }}"
+          - "Note: ssh_config, bashrc, op token, and git clone tasks are not tested in host_prep scenario"

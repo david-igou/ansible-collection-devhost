@@ -12,3 +12,24 @@ host_prep_directories:
   - "{{ ansible_facts.env.HOME }}/.claude"
   - "{{ ansible_facts.env.HOME }}/.claude-container"
   - "{{ ansible_facts.env.HOME }}/workspace"
+  - "{{ ansible_facts.env.HOME }}/.config/op"
+
+# Written to {{ ansible_facts.env.HOME }}/.config/op/service-account-token
+host_prep_onepassword_service_account_token: ""
+
+# Written to {{ ansible_facts.env.HOME }}/.ssh/config
+host_prep_ssh_config: ""
+
+# Written to {{ ansible_facts.env.HOME }}/.bashrc
+host_prep_bashrc: ""
+
+# The repository to clone for the devcontainer, cloned to {{ ansible_facts.env.HOME }}
+host_prep_devcontainer_repository: "git@github.com:igou-io/igou-devenv.git"
+
+# The repositories to clone into the workspace, cloned to {{ ansible_facts.env.HOME }}/workspace/
+host_prep_workspace_repositories:
+  - "git@github.com:igou-io/igou-ansible.git"
+  - "git@github.com:igou-io/igou-openshift.git"
+  - "git@github.com:igou-io/igou-containers.git"
+  - "git@github.com:igou-io/igou-inventory.git"
+  - "git@github.com:igou-io/igou-infrastructure.git"

@@ -1,4 +1,5 @@
 ---
+packages_install_podman_docker: true
 packages_install_docker_cli: false
 packages_install_docker_compose_plugin: true
 packages_install_onepassword: true

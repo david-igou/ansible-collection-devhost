@@ -1,9 +1,12 @@
 ---
 - name: Provision development host
-  hosts: all
+  hosts: devhosts
   gather_facts: true
+  vars:
+    packages_install_docker_cli: true
   roles:
+    - role: david_igou.devhost.packages
     - role: david_igou.devhost.host_prep
     - role: david_igou.devhost.packages
     - role: david_igou.devhost.podman
-    # - role: david_igou.devhost.docker
+    - role: david_igou.devhost.docker

@@ -3,7 +3,6 @@
   ansible.builtin.apt:
     name:
       - podman
-      - podman-docker
       - buildah
       - skopeo
       - fuse-overlayfs
@@ -16,6 +15,12 @@
       - curl
     state: present
     update_cache: true
+
+- name: Install podman-docker
+  ansible.builtin.apt:
+    name: podman-docker
+    state: present
+  when: packages_install_podman_docker
 
 - name: Install distro Node.js packages
   ansible.builtin.apt:
