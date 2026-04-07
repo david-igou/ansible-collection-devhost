@@ -68,6 +68,9 @@
     repo: "{{ host_prep_devcontainer_repository }}"
     dest: "{{ ansible_facts.env.HOME }}/{{ host_prep_devcontainer_repository | basename | regex_replace('\\.git$', '') }}"
     update: false
+    accept_hostkey: true
+  environment:
+    SSH_AUTH_SOCK: "{{ ansible_facts.env.SSH_AUTH_SOCK | default('') }}"
   when: host_prep_devcontainer_repository | length > 0
 
 - name: Clone workspace repositories # noqa: latest[git] - user-specified repos, default branch intended
@@ -75,5 +78,8 @@
     repo: "{{ item }}"
     dest: "{{ ansible_facts.env.HOME }}/workspace/{{ item | basename | regex_replace('\\.git$', '') }}"
     update: false
+    accept_hostkey: true
+  environment:
+    SSH_AUTH_SOCK: "{{ ansible_facts.env.SSH_AUTH_SOCK | default('') }}"
   loop: "{{ host_prep_workspace_repositories }}"
   when: host_prep_workspace_repositories | length > 0

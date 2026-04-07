@@ -18,7 +18,6 @@ Podman host configuration including kernel tuning, user namespace setup, and roo
 | Variable | Default | Description |
 |---|---|---|
 | `podman_rootless` | `true` | Gate rootless-specific tasks (sysctl, subuid/subgid, linger, socket activation) |
-| `podman_nested_support` | `false` | Enable host-side configuration for podman-in-podman (nested containers) |
 | `podman_subuid_start` | `100000` | Starting subuid/subgid value |
 | `podman_subuid_count` | `65536` | Number of subordinate UIDs/GIDs |
 | `podman_user_namespaces_max` | `28633` | `user.max_user_namespaces` sysctl value |
@@ -31,7 +30,6 @@ Podman host configuration including kernel tuning, user namespace setup, and roo
 | `podman_storage_driver` | `"overlay"` | Podman storage driver |
 | `podman_storage_mount_program` | `"/usr/bin/fuse-overlayfs"` | Path to fuse-overlayfs (empty string for native overlay) |
 | `podman_storage_graphroot` | `""` | Override graphroot path for rootless storage |
-| `podman_nested_storage_path` | `""` | Host directory for bind-mounting into containers as nested podman storage |
 
 ## Dependencies
 

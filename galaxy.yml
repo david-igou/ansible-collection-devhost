@@ -25,6 +25,9 @@ homepage: https://github.com/david-igou/ansible-collection-devhost
 issues: https://github.com/david-igou/ansible-collection-devhost/issues
 
 build_ignore:
+  - .ansible
+  - .cursor
+  - .claude
   - .gitignore
   - .github
   - .vscode

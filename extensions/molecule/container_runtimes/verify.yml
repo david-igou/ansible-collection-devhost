@@ -4,6 +4,10 @@
   gather_facts: true
   become: false
 
+  vars:
+    verify_alpine_image: "igou-registry-quay-quay-enterprise.apps.hub.igou.systems/igou/alpine:latest"
+    verify_podman_image: "igou-registry-quay-quay-enterprise.apps.hub.igou.systems/igou/podman:latest"
+
   tasks:
     - name: Load podman role defaults
       ansible.builtin.include_vars:
@@ -225,44 +229,6 @@
           Content: {{ __storage_content }}
 
     # ===================================================================
-    # Section 1b — Nested podman host configuration
-    # ===================================================================
-
-    - name: Read kernel.unprivileged_userns_clone sysctl
-      ansible.builtin.command:
-        cmd: sysctl -n kernel.unprivileged_userns_clone
-      register: _userns_clone
-      changed_when: false
-      failed_when: false
-
-    - name: Assert kernel.unprivileged_userns_clone is enabled on Debian
-      ansible.builtin.assert:
-        that:
-          - _userns_clone.stdout | int == 1
-        fail_msg: >-
-          kernel.unprivileged_userns_clone is {{ _userns_clone.stdout }},
-          expected 1
-      when:
-        - ansible_facts.os_family == "Debian"
-        - _userns_clone.rc == 0
-
-    - name: Check nested podman storage directory exists
-      ansible.builtin.stat:
-        path: /tmp/nested-podman-storage
-      register: _nested_dir
-
-    - name: Assert nested podman storage directory exists
-      ansible.builtin.assert:
-        that:
-          - _nested_dir.stat.exists
-          - _nested_dir.stat.isdir
-          - _nested_dir.stat.mode == "0700"
-        fail_msg: >-
-          /tmp/nested-podman-storage does not exist or has wrong mode.
-          exists={{ _nested_dir.stat.exists | default(false) }},
-          mode={{ _nested_dir.stat.mode | default('unknown') }}
-
-    # ===================================================================
     # Section 2 — Docker CE daemon
     # ===================================================================
 
@@ -371,23 +337,23 @@
           - _podman_version.rc == 0
         fail_msg: "podman --version failed: {{ _podman_version.stderr }}"
 
-    - name: Pull public.ecr.aws/docker/library/alpine via podman
+    - name: Pull alpine image via podman
       ansible.builtin.command:
-        cmd: podman pull --quiet public.ecr.aws/docker/library/alpine:latest
+        cmd: "podman pull --quiet {{ verify_alpine_image }}"
       changed_when: false
 
-    - name: Pull public.ecr.aws/docker/library/alpine via docker
+    - name: Pull alpine image via docker
       ansible.builtin.command:
         argv:
           - sg
           - docker
           - -c
-          - "docker pull --quiet public.ecr.aws/docker/library/alpine:latest"
+          - "docker pull --quiet {{ verify_alpine_image }}"
       changed_when: false
 
     - name: Run container via podman
       ansible.builtin.command:
-        cmd: podman run --rm public.ecr.aws/docker/library/alpine:latest echo podman-ok
+        cmd: "podman run --rm {{ verify_alpine_image }} echo podman-ok"
       register: _podman_run
       changed_when: false
 
@@ -403,7 +369,7 @@
           - sg
           - docker
           - -c
-          - "docker run --rm public.ecr.aws/docker/library/alpine:latest echo docker-ok"
+          - "docker run --rm {{ verify_alpine_image }} echo docker-ok"
       register: _docker_run
       changed_when: false
 
@@ -413,19 +379,19 @@
           - _docker_run.stdout == "docker-ok"
         fail_msg: "docker output was '{{ _docker_run.stdout }}', expected 'docker-ok'"
 
-    - name: List podman public.ecr.aws/docker/library/alpine image IDs
+    - name: List podman alpine image IDs
       ansible.builtin.command:
-        cmd: podman images --quiet public.ecr.aws/docker/library/alpine
+        cmd: "podman images --quiet {{ verify_alpine_image }}"
       register: _podman_images
       changed_when: false
 
-    - name: List docker public.ecr.aws/docker/library/alpine image IDs
+    - name: List docker alpine image IDs
       ansible.builtin.command:
         argv:
           - sg
           - docker
           - -c
-          - "docker images --quiet public.ecr.aws/docker/library/alpine:latest"
+          - "docker images --quiet {{ verify_alpine_image }}"
       register: _docker_images
       changed_when: false
 
@@ -445,7 +411,7 @@
 
     - name: Run rootless container with userns=keep-id
       ansible.builtin.command:
-        cmd: podman run --rm --userns=keep-id public.ecr.aws/docker/library/alpine:latest id -u
+        cmd: "podman run --rm --userns=keep-id {{ verify_alpine_image }} id -u"
       register: _keepid
       changed_when: false
 
@@ -468,7 +434,7 @@
         cmd: >-
           podman run --rm --userns=keep-id
           -v /tmp/rootless-vol-test:/mnt/testfile:z
-          public.ecr.aws/docker/library/alpine:latest cat /mnt/testfile
+          {{ verify_alpine_image }} cat /mnt/testfile
       register: _volmount
       changed_when: false
 
@@ -508,7 +474,7 @@
 
     - name: Run privileged podman container
       ansible.builtin.command:
-        cmd: podman run --rm --privileged public.ecr.aws/docker/library/alpine:latest cat /proc/self/status
+        cmd: "podman run --rm --privileged {{ verify_alpine_image }} cat /proc/self/status"
       register: _podman_priv
       changed_when: false
 
@@ -524,7 +490,7 @@
           - sg
           - docker
           - -c
-          - "docker run --rm --privileged public.ecr.aws/docker/library/alpine cat /proc/self/status"
+          - "docker run --rm --privileged {{ verify_alpine_image }} cat /proc/self/status"
       register: _docker_priv
       changed_when: false
 
@@ -540,7 +506,7 @@
 
     - name: Pull podman stable image via podman
       ansible.builtin.command:
-        cmd: podman pull --quiet quay.io/podman/stable
+        cmd: "podman pull --quiet {{ verify_podman_image }}"
       changed_when: false
 
     - name: Pull podman stable image via docker
@@ -549,7 +515,7 @@
           - sg
           - docker
           - -c
-          - "docker pull --quiet quay.io/podman/stable"
+          - "docker pull --quiet {{ verify_podman_image }}"
       changed_when: false
 
     - name: Create build context directory
@@ -561,7 +527,7 @@
     - name: Create Containerfile for nested build tests
       ansible.builtin.copy:
         content: |
-          FROM public.ecr.aws/docker/library/alpine
+          FROM {{ verify_alpine_image }}
           RUN echo built
         dest: /tmp/buildctx/Containerfile
         mode: "0644"
@@ -576,8 +542,8 @@
       ansible.builtin.command:
         cmd: >-
           podman run --rm --privileged
-          quay.io/podman/stable
-          podman run --rm public.ecr.aws/docker/library/alpine echo nested-ok
+          {{ verify_podman_image }}
+          podman run --rm {{ verify_alpine_image }} echo nested-ok
       register: _nested_priv
       changed_when: false
 
@@ -606,8 +572,8 @@
           --cap-add SYS_ADMIN,MKNOD,SYS_CHROOT
           --device /dev/fuse
           --security-opt unmask=/proc/*
-          quay.io/podman/stable
-          podman run --rm public.ecr.aws/docker/library/alpine echo nested-caps-ok
+          {{ verify_podman_image }}
+          podman run --rm {{ verify_alpine_image }} echo nested-caps-ok
       register: _nested_caps
       changed_when: false
       failed_when: false
@@ -641,8 +607,8 @@
         cmd: >-
           podman run --rm
           --security-opt unmask=/proc/*
-          quay.io/podman/stable
-          podman --storage-driver vfs run --rm public.ecr.aws/docker/library/alpine echo nested-vfs-ok
+          {{ verify_podman_image }}
+          podman --storage-driver vfs run --rm {{ verify_alpine_image }} echo nested-vfs-ok
       register: _nested_vfs
       changed_when: false
       failed_when: false
@@ -681,7 +647,7 @@
           - sg
           - docker
           - -c
-          - "docker run --rm --privileged quay.io/podman/stable podman run --rm public.ecr.aws/docker/library/alpine echo podman-in-docker-ok"
+          - "docker run --rm --privileged {{ verify_podman_image }} podman run --rm {{ verify_alpine_image }} echo podman-in-docker-ok"
       register: _pid_priv
       changed_when: false
 
@@ -707,8 +673,8 @@
             --cap-add SYS_ADMIN --cap-add MKNOD --cap-add SYS_CHROOT
             --device /dev/fuse
             --security-opt 'unmask=/proc/*'
-            quay.io/podman/stable
-            podman run --rm public.ecr.aws/docker/library/alpine echo podman-in-docker-caps-ok
+            {{ verify_podman_image }}
+            podman run --rm {{ verify_alpine_image }} echo podman-in-docker-caps-ok
       register: _pid_caps
       changed_when: false
       failed_when: false
@@ -746,8 +712,8 @@
           - >-
             docker run --rm
             --security-opt 'unmask=/proc/*'
-            quay.io/podman/stable
-            podman --storage-driver vfs run --rm public.ecr.aws/docker/library/alpine echo podman-in-docker-vfs-ok
+            {{ verify_podman_image }}
+            podman --storage-driver vfs run --rm {{ verify_alpine_image }} echo podman-in-docker-vfs-ok
       register: _pid_vfs
       changed_when: false
       failed_when: false
@@ -782,7 +748,7 @@
           - sg
           - docker
           - -c
-          - "docker run --rm --privileged -v /tmp/buildctx:/build quay.io/podman/stable podman build -t test-build-in-docker /build"
+          - "docker run --rm --privileged -v /tmp/buildctx:/build {{ verify_podman_image }} podman build -t test-build-in-docker /build"
       register: _pid_build
       changed_when: false
 
@@ -805,7 +771,7 @@
         cmd: >-
           podman run --rm --privileged
           -v /tmp/buildctx:/build:z
-          quay.io/podman/stable
+          {{ verify_podman_image }}
           podman build -t test-build /build
       register: _nested_build
       changed_when: false
@@ -830,7 +796,7 @@
           podman run --rm
           --security-opt unmask=/proc/*
           -v /tmp/buildctx:/build:z
-          quay.io/podman/stable
+          {{ verify_podman_image }}
           podman --storage-driver vfs build -t test-build-vfs /build
       register: _nested_vfs_build
       changed_when: false
@@ -857,7 +823,90 @@
               nested vfs build failed due to kernel restrictions.
 
     # ===================================================================
-    # Section 10 — Summary
+    # Section 10 — Devcontainer with Podman
+    # ===================================================================
+
+    - name: Check devcontainer CLI is available
+      ansible.builtin.command:
+        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/devcontainer --version"
+      register: _devcontainer_version
+      changed_when: false
+
+    - name: Assert devcontainer CLI is installed
+      ansible.builtin.assert:
+        that:
+          - _devcontainer_version.rc == 0
+        fail_msg: "devcontainer CLI not found or failed: {{ _devcontainer_version.stderr }}"
+
+    - name: Check devcontainer workspace exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/igou-devenv"
+      register: _devcontainer_workspace
+
+    - name: Assert devcontainer workspace was cloned
+      ansible.builtin.assert:
+        that:
+          - _devcontainer_workspace.stat.exists
+          - _devcontainer_workspace.stat.isdir
+        fail_msg: "~/igou-devenv does not exist"
+
+    - name: Build devcontainer image with podman
+      ansible.builtin.command:
+        cmd: >-
+          {{ ansible_facts.env.HOME }}/.local/bin/devcontainer build
+          --docker-path podman
+          --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
+      register: _devcontainer_build
+      changed_when: false
+
+    - name: Assert devcontainer build succeeded
+      ansible.builtin.assert:
+        that:
+          - _devcontainer_build.rc == 0
+        fail_msg: >-
+          devcontainer build failed.
+          stdout: {{ _devcontainer_build.stdout }}
+          stderr: {{ _devcontainer_build.stderr }}
+
+    - name: Start devcontainer with podman
+      ansible.builtin.command:
+        cmd: >-
+          {{ ansible_facts.env.HOME }}/.local/bin/devcontainer up
+          --docker-path podman
+          --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
+      register: _devcontainer_up
+      changed_when: false
+
+    - name: Assert devcontainer up succeeded
+      ansible.builtin.assert:
+        that:
+          - _devcontainer_up.rc == 0
+        fail_msg: >-
+          devcontainer up failed.
+          stdout: {{ _devcontainer_up.stdout }}
+          stderr: {{ _devcontainer_up.stderr }}
+
+    - name: Run nested podman inside devcontainer
+      ansible.builtin.command:
+        cmd: >-
+          {{ ansible_facts.env.HOME }}/.local/bin/devcontainer exec
+          --docker-path podman
+          --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
+          podman run --rm {{ verify_alpine_image }} echo "hello from nested podman"
+      register: _devcontainer_nested
+      changed_when: false
+
+    - name: Assert nested podman inside devcontainer worked
+      ansible.builtin.assert:
+        that:
+          - "'hello from nested podman' in _devcontainer_nested.stdout"
+        fail_msg: >-
+          Nested podman inside devcontainer failed.
+          stdout: {{ _devcontainer_nested.stdout }}
+          stderr: {{ _devcontainer_nested.stderr }}
+
+    # ===================================================================
+    # Section 11 — Summary
     # ===================================================================
 
     - name: Print verification summary
@@ -866,7 +915,6 @@
           - "=== Hard requirements (playbook fails if any miss) ==="
           - "Host prep: passed"
           - "Podman rootless: passed"
-          - "Nested podman host config: passed"
           - "Docker CE: passed"
           - "Coexistence: passed"
           - "Rootless podman lifecycle: passed"
@@ -876,6 +924,7 @@
           - "Podman-in-Docker (privileged): passed"
           - "Podman-in-Docker build (privileged): passed"
           - "Nested build (podman-in-podman privileged): passed"
+          - "Devcontainer build/up/exec with podman: passed"
           - ""
           - "=== Exploratory (distro/kernel-dependent, does not fail playbook) ==="
           - "Nested podman (targeted caps): {{ 'passed' if _soft_nested_caps else 'not supported' }}"
