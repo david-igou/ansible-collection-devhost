@@ -191,7 +191,7 @@ packages_kubeconform_version: "v0.7.0"
 packages_kube_burner_version: "v2.4.2"
 
 # renovate: datasource=github-releases depName=kube-burner/kube-burner-ocp
-packages_kube_burner_ocp_version: "v1.11.4"
+packages_kube_burner_ocp_version: "v1.11.5"
 
 # renovate: datasource=github-releases depName=nektos/act
 packages_act_version: "v0.2.84"
