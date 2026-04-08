@@ -5,7 +5,6 @@
   become: false
 
   vars:
-    host_prep_git_github_ssh_rewrite: false
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
     host_prep_ssh_config: |
@@ -15,7 +14,7 @@
       # Test bashrc
       export EDITOR=vim
     host_prep_onepassword_service_account_token: "test-token-value"
-    host_prep_devcontainer_repository: "https://github.com/igou-io/igou-devenv.git"
+    host_prep_devcontainer_repository: ""
     host_prep_workspace_repositories: []
     packages_install_onepassword: true
 
