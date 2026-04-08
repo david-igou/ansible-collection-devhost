@@ -1,0 +1,21 @@
+---
+breaking_changes:
+  - >-
+    Podman and Docker CE package installation moved out of the ``packages`` role
+    into the ``podman`` and ``docker`` roles respectively. The following variables
+    have been renamed:
+    ``packages_install_podman_docker`` → ``podman_docker_compat``,
+    ``packages_install_docker_cli`` → ``docker_install_cli``,
+    ``packages_install_docker_compose_plugin`` → ``docker_install_compose_plugin``
+    (https://github.com/david-igou/ansible-collection-devhost/issues/22).
+major_changes:
+  - >-
+    The ``podman`` role now installs its own packages (podman, buildah, skopeo,
+    fuse-overlayfs, slirp4netns, uidmap/shadow-utils, catatonit) and no longer
+    depends on the ``packages`` role
+    (https://github.com/david-igou/ansible-collection-devhost/issues/22).
+  - >-
+    The ``docker`` role now manages the full Docker CE lifecycle including
+    repository setup, CLI installation, compose plugin, daemon, and rootless
+    mode. It no longer depends on the ``packages`` role
+    (https://github.com/david-igou/ansible-collection-devhost/issues/22).
