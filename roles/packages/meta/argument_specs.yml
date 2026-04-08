@@ -49,62 +49,6 @@ argument_specs:
         default: true
         description: >-
           Install virtctl at the version specified by packages_virtctl_version.
-      packages_install_extra_packages:
-        type: bool
-        default: true
-        description: >-
-          Install the distro-specific extra package list.
-      packages_install_nodejs_pinned:
-        type: bool
-        default: true
-        description: >-
-          Install Node.js at the pinned version instead of the distro package.
-      packages_install_pip_packages:
-        type: bool
-        default: true
-        description: >-
-          Install the docker-compose-plugin alongside docker-ce-cli.
-          Only effective when packages_install_docker_cli is true.
-      packages_install_onepassword:
-        type: bool
-        default: true
-        description: >-
-          Install the 1Password CLI from the official 1Password repository.
-      packages_install_github_cli:
-        type: bool
-        default: true
-        description: >-
-          Install the GitHub CLI (gh) from the official GitHub repository.
-      packages_install_claude_code:
-        type: bool
-        default: true
-        description: >-
-          Install the Claude Code CLI via the official install script.
-      packages_install_cursor_agent:
-        type: bool
-        default: true
-        description: >-
-          Install the Cursor agent CLI via the official install script.
-      packages_install_kubectl:
-        type: bool
-        default: true
-        description: >-
-          Install kubectl at the version specified by packages_kubectl_version.
-      packages_install_helm:
-        type: bool
-        default: true
-        description: >-
-          Install Helm at the version specified by packages_helm_version.
-      packages_install_kustomize:
-        type: bool
-        default: true
-        description: >-
-          Install kustomize at the version specified by packages_kustomize_version.
-      packages_install_virtctl:
-        type: bool
-        default: true
-        description: >-
-          Install virtctl at the version specified by packages_virtctl_version.
       packages_install_argocd:
         type: bool
         default: true
