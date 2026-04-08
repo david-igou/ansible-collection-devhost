@@ -188,7 +188,7 @@ packages_oc_version: "latest"
 packages_kubeconform_version: "v0.7.0"
 
 # renovate: datasource=github-releases depName=kube-burner/kube-burner
-packages_kube_burner_version: "v2.4.2"
+packages_kube_burner_version: "v2.5.0"
 
 # renovate: datasource=github-releases depName=kube-burner/kube-burner-ocp
 packages_kube_burner_ocp_version: "v1.11.4"
