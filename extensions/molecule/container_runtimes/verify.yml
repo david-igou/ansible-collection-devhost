@@ -850,12 +850,15 @@
           - _devcontainer_workspace.stat.isdir
         fail_msg: "~/igou-devenv does not exist"
 
-    - name: Build devcontainer image with podman
+    - name: Build devcontainer image (Docker)
       ansible.builtin.command:
-        cmd: >-
-          {{ ansible_facts.env.HOME }}/.local/bin/devcontainer build
-          --docker-path podman
-          --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
+        argv:
+          - sg
+          - docker
+          - -c
+          - >-
+            {{ ansible_facts.env.HOME }}/.local/bin/devcontainer build
+            --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
       register: _devcontainer_build
       changed_when: false
 
@@ -868,12 +871,15 @@
           stdout: {{ _devcontainer_build.stdout }}
           stderr: {{ _devcontainer_build.stderr }}
 
-    - name: Start devcontainer with podman
+    - name: Start devcontainer
       ansible.builtin.command:
-        cmd: >-
-          {{ ansible_facts.env.HOME }}/.local/bin/devcontainer up
-          --docker-path podman
-          --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
+        argv:
+          - sg
+          - docker
+          - -c
+          - >-
+            {{ ansible_facts.env.HOME }}/.local/bin/devcontainer up
+            --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
       register: _devcontainer_up
       changed_when: false
 
@@ -888,11 +894,14 @@
 
     - name: Run nested podman inside devcontainer
       ansible.builtin.command:
-        cmd: >-
-          {{ ansible_facts.env.HOME }}/.local/bin/devcontainer exec
-          --docker-path podman
-          --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
-          podman run --rm {{ verify_alpine_image }} echo "hello from nested podman"
+        argv:
+          - sg
+          - docker
+          - -c
+          - >-
+            {{ ansible_facts.env.HOME }}/.local/bin/devcontainer exec
+            --workspace-folder {{ ansible_facts.env.HOME }}/igou-devenv
+            podman run --rm {{ verify_alpine_image }} echo "hello from nested podman"
       register: _devcontainer_nested
       changed_when: false
 
@@ -924,7 +933,7 @@
           - "Podman-in-Docker (privileged): passed"
           - "Podman-in-Docker build (privileged): passed"
           - "Nested build (podman-in-podman privileged): passed"
-          - "Devcontainer build/up/exec with podman: passed"
+          - "Devcontainer build/up/exec with docker: passed"
           - ""
           - "=== Exploratory (distro/kernel-dependent, does not fail playbook) ==="
           - "Nested podman (targeted caps): {{ 'passed' if _soft_nested_caps else 'not supported' }}"

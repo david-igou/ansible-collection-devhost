@@ -1,0 +1,19 @@
+---
+- name: Install podman packages
+  ansible.builtin.apt:
+    name:
+      - podman
+      - buildah
+      - skopeo
+      - fuse-overlayfs
+      - slirp4netns
+      - uidmap
+      - catatonit
+    state: present
+    update_cache: true
+
+- name: Install podman-docker
+  ansible.builtin.apt:
+    name: podman-docker
+    state: present
+  when: podman_docker_compat

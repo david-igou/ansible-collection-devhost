@@ -1,4 +1,10 @@
 ---
+- name: Install podman packages
+  become: true
+  block:
+    - name: Include distro-specific package tasks
+      ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
+
 - name: System-level podman configuration
   become: true
   when: podman_rootless

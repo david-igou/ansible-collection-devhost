@@ -2,25 +2,12 @@
 - name: Install core packages
   ansible.builtin.apt:
     name:
-      - podman
-      - buildah
-      - skopeo
-      - fuse-overlayfs
-      - slirp4netns
-      - uidmap
-      - catatonit
       - git
       - jq
       - make
       - curl
     state: present
     update_cache: true
-
-- name: Install podman-docker
-  ansible.builtin.apt:
-    name: podman-docker
-    state: present
-  when: packages_install_podman_docker
 
 - name: Install distro Node.js packages
   ansible.builtin.apt:
@@ -31,7 +18,6 @@
   when: not packages_install_nodejs_pinned
 
 - name: Add 1Password GPG key
-
   ansible.builtin.apt_key:
     url: https://downloads.1password.com/linux/keys/1password.asc
     keyring: /usr/share/keyrings/1password-archive-keyring.gpg
@@ -39,7 +25,6 @@
   when: packages_install_onepassword
 
 - name: Add 1Password apt repository
-
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main"
     filename: 1password
@@ -47,7 +32,6 @@
   when: packages_install_onepassword
 
 - name: Install 1Password CLI
-
   ansible.builtin.apt:
     name: 1password-cli
     state: present
@@ -55,7 +39,6 @@
   when: packages_install_onepassword
 
 - name: Add GitHub CLI GPG key
-
   ansible.builtin.apt_key:
     url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
     keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -63,7 +46,6 @@
   when: packages_install_github_cli
 
 - name: Add GitHub CLI apt repository
-
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
     filename: github-cli
@@ -71,48 +53,11 @@
   when: packages_install_github_cli
 
 - name: Install GitHub CLI
-
   ansible.builtin.apt:
     name: gh
     state: present
     update_cache: true
   when: packages_install_github_cli
-
-- name: Install Docker CE CLI
-  when: packages_install_docker_cli
-  block:
-    - name: Add Docker CE GPG key
-      ansible.builtin.apt_key:
-        url: "https://download.docker.com/linux/{{ ansible_facts.distribution | lower }}/gpg"
-        keyring: /usr/share/keyrings/docker-archive-keyring.gpg
-        state: present
-
-    - name: Add Docker CE apt repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [arch={{ ansible_facts.architecture | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }}
-          signed-by=/usr/share/keyrings/docker-archive-keyring.gpg]
-          https://download.docker.com/linux/{{ ansible_facts.distribution | lower }}
-          {{ ansible_facts.distribution_release }} stable
-        filename: docker-ce
-        state: present
-
-    - name: Remove podman-docker to avoid conflict
-      ansible.builtin.apt:
-        name: podman-docker
-        state: absent
-
-    - name: Install docker-ce-cli
-      ansible.builtin.apt:
-        name: docker-ce-cli
-        state: present
-        update_cache: true
-
-    - name: Install docker-compose-plugin
-      ansible.builtin.apt:
-        name: docker-compose-plugin
-        state: present
-      when: packages_install_docker_compose_plugin
 
 - name: Install extra packages
   ansible.builtin.apt:
