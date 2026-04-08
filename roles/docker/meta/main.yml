@@ -17,5 +17,4 @@ galaxy_info:
       versions:
         - "9"
 
-dependencies:
-  - role: david_igou.devhost.packages
+dependencies: []

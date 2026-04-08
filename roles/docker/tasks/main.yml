@@ -9,13 +9,19 @@
     - docker_enabled
     - podman_docker_socket_symlink | default(false)
 
-- name: Docker daemon setup
+- name: Docker package setup
   become: true
   when: docker_enabled
   block:
     - name: Include distro-specific package tasks
       ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
 
+- name: Docker daemon configuration
+  become: true
+  when:
+    - docker_enabled
+    - docker_install_daemon
+  block:
     - name: Create Docker configuration directory
       ansible.builtin.file:
         path: /etc/docker

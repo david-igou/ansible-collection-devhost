@@ -5,12 +5,6 @@
   become: false
 
   tasks:
-    - name: Check podman is installed
-      ansible.builtin.command:
-        cmd: podman --version
-      register: _podman
-      changed_when: false
-
     - name: Check git is installed # noqa: command-instead-of-module
       ansible.builtin.command:
         cmd: git --version
@@ -281,7 +275,6 @@
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
-          - "podman: {{ _podman.stdout }}"
           - "git: {{ _git.stdout }}"
           - "devcontainer: {{ _devcontainer.stdout }}"
           - "workspace: {{ _workspace.stat.exists }}"

@@ -1,9 +1,12 @@
 ---
 argument_specs:
   main:
-    short_description: Manage Docker CE daemon and service
+    short_description: Install and manage Docker CE
     description:
-      - Installs Docker CE daemon and containerd.
+      - Sets up the Docker CE repository for the target distro.
+      - Installs docker-ce-cli and docker-compose-plugin.
+      - Removes podman-docker to avoid file conflicts on /usr/bin/docker.
+      - Optionally installs the Docker daemon (docker-ce, containerd.io).
       - Deploys /etc/docker/daemon.json with configurable options.
       - Manages docker group membership for socket access.
       - Enables and starts docker.service.
@@ -15,6 +18,23 @@ argument_specs:
         description: >-
           Gate for all role tasks. Set to false to include the role
           without executing any tasks.
+      docker_install_cli:
+        type: bool
+        default: true
+        description: >-
+          Install the docker-ce-cli package from the Docker CE repository.
+      docker_install_compose_plugin:
+        type: bool
+        default: true
+        description: >-
+          Install the docker-compose-plugin package alongside docker-ce-cli.
+      docker_install_daemon:
+        type: bool
+        default: true
+        description: >-
+          Install docker-ce and containerd.io, deploy daemon.json,
+          manage the docker group, and enable docker.service.
+          Set to false for a CLI-only installation.
       docker_rootless:
         type: bool
         default: false

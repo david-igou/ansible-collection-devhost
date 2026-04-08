@@ -1,10 +1,13 @@
 # docker
 
-Docker CE daemon installation and configuration.
+Docker CE installation and configuration.
 
 ## What it does
 
-- Installs Docker CE and containerd via distro-specific package managers
+- Sets up the Docker CE repository for the target distro (Debian/RedHat)
+- Removes podman-docker to avoid file conflicts on /usr/bin/docker
+- Installs docker-ce-cli and docker-compose-plugin
+- Optionally installs the Docker daemon (docker-ce, containerd.io)
 - Deploys `/etc/docker/daemon.json` with configurable storage driver, log driver, registry mirrors, and arbitrary options
 - Manages `docker` group membership for socket access
 - Enables and starts `docker.service`
@@ -15,6 +18,9 @@ Docker CE daemon installation and configuration.
 | Variable | Default | Description |
 |---|---|---|
 | `docker_enabled` | `true` | Gate for all role tasks; set to `false` to skip |
+| `docker_install_cli` | `true` | Install docker-ce-cli from the Docker CE repository |
+| `docker_install_compose_plugin` | `true` | Install docker-compose-plugin |
+| `docker_install_daemon` | `true` | Install docker-ce and containerd.io, deploy daemon.json, enable service |
 | `docker_rootless` | `false` | Install rootless extras and configure user-scoped Docker |
 | `docker_storage_driver` | `"overlay2"` | Storage driver for daemon.json |
 | `docker_log_driver` | `"journald"` | Default container logging driver |
@@ -24,6 +30,15 @@ Docker CE daemon installation and configuration.
 | `docker_daemon_options` | `{}` | Arbitrary keys merged into daemon.json (highest precedence) |
 | `docker_group_members` | `["{{ ansible_facts.user_id }}"]` | Users to add to the `docker` group |
 
+## Breaking changes from packages role
+
+The following variables have been renamed:
+
+| Old (packages role) | New (docker role) |
+|---|---|
+| `packages_install_docker_cli` | `docker_install_cli` |
+| `packages_install_docker_compose_plugin` | `docker_install_compose_plugin` |
+
 ## Dependencies
 
-- `david_igou.devhost.packages` (Docker CE repo setup and CLI are handled by the packages role)
+None. This role manages its own repository setup and package installation.

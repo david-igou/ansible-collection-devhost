@@ -1,0 +1,18 @@
+---
+- name: Install podman packages
+  ansible.builtin.dnf:
+    name:
+      - podman
+      - buildah
+      - skopeo
+      - fuse-overlayfs
+      - slirp4netns
+      - shadow-utils
+      - catatonit
+    state: present
+
+- name: Install podman-docker
+  ansible.builtin.dnf:
+    name: podman-docker
+    state: present
+  when: podman_docker_compat

@@ -1,5 +1,8 @@
 ---
 docker_enabled: true
+docker_install_cli: true
+docker_install_compose_plugin: true
+docker_install_daemon: true
 docker_rootless: false
 docker_storage_driver: "overlay2"
 docker_log_driver: "journald"

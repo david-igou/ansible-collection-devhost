@@ -1,16 +1,31 @@
 ---
-- name: Check Docker CE repository is configured
-  ansible.builtin.command:
-    cmd: dnf repolist docker-ce
-  register: __docker_repo_check
-  changed_when: false
+- name: Add Docker CE yum repository
+  vars:
+    __docker_distro: "{{ 'fedora' if ansible_facts.distribution == 'Fedora' else 'centos' }}"
+  ansible.builtin.yum_repository:
+    name: docker-ce
+    description: Docker CE Stable
+    baseurl: "https://download.docker.com/linux/{{ __docker_distro }}/$releasever/$basearch/stable"
+    gpgkey: "https://download.docker.com/linux/centos/gpg"
+    gpgcheck: true
+    enabled: true
 
-- name: Fail if Docker CE repository is not configured
-  ansible.builtin.fail:
-    msg: >-
-      Docker CE repository is not configured. Ensure the packages role
-      has been run with packages_install_docker_cli: true.
-  when: "'docker-ce' not in __docker_repo_check.stdout"
+- name: Remove podman-docker to avoid conflict
+  ansible.builtin.dnf:
+    name: podman-docker
+    state: absent
+
+- name: Install docker-ce-cli
+  ansible.builtin.dnf:
+    name: docker-ce-cli
+    state: present
+  when: docker_install_cli
+
+- name: Install docker-compose-plugin
+  ansible.builtin.dnf:
+    name: docker-compose-plugin
+    state: present
+  when: docker_install_compose_plugin
 
 - name: Install Docker daemon packages
   ansible.builtin.dnf:
@@ -18,6 +33,7 @@
       - docker-ce
       - containerd.io
     state: present
+  when: docker_install_daemon
 
 - name: Install rootless Docker extras
   ansible.builtin.dnf:
