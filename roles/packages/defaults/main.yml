@@ -197,4 +197,4 @@ packages_kube_burner_ocp_version: "v1.11.4"
 packages_act_version: "v0.2.84"
 
 # renovate: datasource=github-releases depName=rclone/rclone
-packages_rclone_version: "v1.73.2"
+packages_rclone_version: "v1.73.3"
