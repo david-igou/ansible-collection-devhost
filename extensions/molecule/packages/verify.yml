@@ -269,6 +269,162 @@
         fail_msg: "direnv is not installed"
       when: ansible_facts.os_family == "Debian"
 
+    - name: Check argocd is installed
+      ansible.builtin.command:
+        cmd: argocd version --client --short
+      register: _argocd
+      changed_when: false
+
+    - name: Assert argocd version
+      ansible.builtin.assert:
+        that:
+          - (packages_argocd_version | regex_replace('^v', '')) in _argocd.stdout
+        fail_msg: "argocd version mismatch: expected {{ packages_argocd_version }}"
+
+    - name: Check flux is installed
+      ansible.builtin.command:
+        cmd: flux version --client
+      register: _flux
+      changed_when: false
+
+    - name: Assert flux version
+      ansible.builtin.assert:
+        that:
+          - (packages_flux_version | regex_replace('^v', '')) in _flux.stdout
+        fail_msg: "flux version mismatch: expected {{ packages_flux_version }}"
+
+    - name: Check kubeseal is installed
+      ansible.builtin.command:
+        cmd: kubeseal --version
+      register: _kubeseal
+      changed_when: false
+
+    - name: Assert kubeseal version
+      ansible.builtin.assert:
+        that:
+          - (packages_kubeseal_version | regex_replace('^v', '')) in _kubeseal.stdout
+        fail_msg: "kubeseal version mismatch: expected {{ packages_kubeseal_version }}"
+
+    - name: Check tkn is installed
+      ansible.builtin.command:
+        cmd: tkn version
+      register: _tkn
+      changed_when: false
+
+    - name: Assert tkn version
+      ansible.builtin.assert:
+        that:
+          - (packages_tkn_version | regex_replace('^v', '')) in _tkn.stdout
+        fail_msg: "tkn version mismatch: expected {{ packages_tkn_version }}"
+
+    - name: Check terraform is installed
+      ansible.builtin.command:
+        cmd: terraform version
+      register: _terraform
+      changed_when: false
+
+    - name: Assert terraform version
+      ansible.builtin.assert:
+        that:
+          - (packages_terraform_version | regex_replace('^v', '')) in _terraform.stdout
+        fail_msg: "terraform version mismatch: expected {{ packages_terraform_version }}"
+
+    - name: Check sops is installed
+      ansible.builtin.command:
+        cmd: sops --version
+      register: _sops
+      changed_when: false
+
+    - name: Assert sops version
+      ansible.builtin.assert:
+        that:
+          - (packages_sops_version | regex_replace('^v', '')) in _sops.stdout
+        fail_msg: "sops version mismatch: expected {{ packages_sops_version }}"
+
+    - name: Check oc is installed
+      ansible.builtin.command:
+        cmd: oc version --client
+      register: _oc
+      changed_when: false
+
+    - name: Assert oc reports a version
+      ansible.builtin.assert:
+        that:
+          - _oc.stdout | length > 0
+        fail_msg: "oc did not return a version string"
+
+    - name: Check kubeconform is installed
+      ansible.builtin.command:
+        cmd: kubeconform -v
+      register: _kubeconform
+      changed_when: false
+
+    - name: Assert kubeconform version
+      ansible.builtin.assert:
+        that:
+          - (packages_kubeconform_version | regex_replace('^v', '')) in _kubeconform.stdout
+        fail_msg: "kubeconform version mismatch: expected {{ packages_kubeconform_version }}"
+
+    - name: Check kube-burner is installed
+      ansible.builtin.command:
+        cmd: kube-burner version
+      register: _kube_burner
+      changed_when: false
+
+    - name: Assert kube-burner version
+      ansible.builtin.assert:
+        that:
+          - (packages_kube_burner_version | regex_replace('^v', '')) in _kube_burner.stdout
+        fail_msg: "kube-burner version mismatch: expected {{ packages_kube_burner_version }}"
+
+    - name: Check kube-burner-ocp is installed
+      ansible.builtin.command:
+        cmd: kube-burner-ocp version
+      register: _kube_burner_ocp
+      changed_when: false
+
+    - name: Assert kube-burner-ocp version
+      ansible.builtin.assert:
+        that:
+          - (packages_kube_burner_ocp_version | regex_replace('^v', '')) in _kube_burner_ocp.stdout
+        fail_msg: "kube-burner-ocp version mismatch: expected {{ packages_kube_burner_ocp_version }}"
+
+    - name: Check act is installed
+      ansible.builtin.command:
+        cmd: act --version
+      register: _act
+      changed_when: false
+
+    - name: Assert act version
+      ansible.builtin.assert:
+        that:
+          - (packages_act_version | regex_replace('^v', '')) in _act.stdout
+        fail_msg: "act version mismatch: expected {{ packages_act_version }}"
+
+    - name: Check mc is installed
+      ansible.builtin.command:
+        cmd: mc --version
+      register: _mc
+      changed_when: false
+
+    - name: Assert mc reports a version
+      ansible.builtin.assert:
+        that:
+          - _mc.stdout | length > 0
+        fail_msg: "mc did not return a version string"
+
+    - name: Check rclone is installed
+      ansible.builtin.command:
+        cmd: rclone version
+      register: _rclone
+      changed_when: false
+
+    - name: Assert rclone version
+      ansible.builtin.assert:
+        that:
+          - (packages_rclone_version | regex_replace('^v', '')) in _rclone.stdout
+        fail_msg: "rclone version mismatch: expected {{ packages_rclone_version }}"
+
     # -- Docker CE CLI --
 
     - name: Check docker CLI version
@@ -340,6 +496,19 @@
           - "helm: {{ _helm.stdout }}"
           - "kustomize: {{ _kustomize.stdout }}"
           - "virtctl: {{ _virtctl.stdout_lines[0] }}"
+          - "argocd: {{ _argocd.stdout }}"
+          - "flux: {{ _flux.stdout_lines[0] }}"
+          - "kubeseal: {{ _kubeseal.stdout }}"
+          - "tkn: {{ _tkn.stdout_lines[0] }}"
+          - "terraform: {{ _terraform.stdout_lines[0] }}"
+          - "sops: {{ _sops.stdout }}"
+          - "oc: {{ _oc.stdout_lines[0] }}"
+          - "kubeconform: {{ _kubeconform.stdout }}"
+          - "kube-burner: {{ _kube_burner.stdout_lines[0] }}"
+          - "kube-burner-ocp: {{ _kube_burner_ocp.stdout_lines[0] }}"
+          - "act: {{ _act.stdout }}"
+          - "mc: {{ _mc.stdout_lines[0] }}"
+          - "rclone: {{ _rclone.stdout_lines[0] }}"
           - "op: {{ _op.stdout }}"
           - "gh: {{ _gh.stdout_lines[0] }}"
           - "claude: {{ _claude.stdout }}"
