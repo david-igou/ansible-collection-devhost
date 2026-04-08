@@ -9,12 +9,6 @@
       ansible.builtin.include_vars:
         file: ../../../roles/packages/defaults/main.yml
 
-    - name: Check podman is installed
-      ansible.builtin.command:
-        cmd: podman --version
-      register: _podman
-      changed_when: false
-
     - name: Check git is installed # noqa: command-instead-of-module
       ansible.builtin.command:
         cmd: git --version
@@ -487,7 +481,6 @@
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
-          - "podman: {{ _podman.stdout }}"
           - "git: {{ _git.stdout }}"
           - "devcontainer: {{ _devcontainer.stdout }}"
           - "jq: {{ _jq.stdout }}"
@@ -518,8 +511,6 @@
           - "nmap: {{ _nmap.stdout_lines[0] }}"
           - "rsync: {{ _rsync.stdout_lines[0] }}"
           - "gpg: {{ _gpg.stdout_lines[0] }}"
-          - "docker: {{ _docker.stdout }}"
-          - "docker-compose: {{ _docker_compose.stdout }}"
           - "node: {{ _node.stdout }}"
           - "npm: {{ _npm.stdout }}"
           - "ansible: {{ _ansible.stdout_lines[0] }}"

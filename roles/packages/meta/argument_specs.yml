@@ -3,19 +3,63 @@ argument_specs:
   main:
     short_description: Install system packages and CLI tools
     description:
-      - Installs core packages (podman, git, jq, etc.) via distro package manager.
-      - Configures optional third-party repositories (1Password, GitHub CLI, Docker CE).
+      - Installs core packages (git, jq, make, curl) via distro package manager.
+      - Configures optional third-party repositories (1Password, GitHub CLI).
       - Installs pinned versions of kubectl, helm, kustomize, virtctl, and Node.js.
       - Downloads and installs additional binary CLI tools for GitOps, infrastructure, and Kubernetes workflows.
       - Installs pip packages and npm-based CLI tools.
     options:
-      packages_install_docker_cli:
+      packages_install_onepassword:
         type: bool
-        default: false
+        default: true
         description: >-
-          Install Docker CE CLI from the official Docker repository.
-          When true, podman-docker is removed to avoid a file conflict on /usr/bin/docker.
-      packages_install_docker_compose_plugin:
+          Install the 1Password CLI from the official 1Password repository.
+      packages_install_github_cli:
+        type: bool
+        default: true
+        description: >-
+          Install the GitHub CLI (gh) from the official GitHub repository.
+      packages_install_claude_code:
+        type: bool
+        default: true
+        description: >-
+          Install the Claude Code CLI via the official install script.
+      packages_install_cursor_agent:
+        type: bool
+        default: true
+        description: >-
+          Install the Cursor agent CLI via the official install script.
+      packages_install_kubectl:
+        type: bool
+        default: true
+        description: >-
+          Install kubectl at the version specified by packages_kubectl_version.
+      packages_install_helm:
+        type: bool
+        default: true
+        description: >-
+          Install Helm at the version specified by packages_helm_version.
+      packages_install_kustomize:
+        type: bool
+        default: true
+        description: >-
+          Install kustomize at the version specified by packages_kustomize_version.
+      packages_install_virtctl:
+        type: bool
+        default: true
+        description: >-
+          Install virtctl at the version specified by packages_virtctl_version.
+      packages_install_extra_packages:
+        type: bool
+        default: true
+        description: >-
+          Install the distro-specific extra package list.
+      packages_install_nodejs_pinned:
+        type: bool
+        default: true
+        description: >-
+          Install Node.js at the pinned version instead of the distro package.
+      packages_install_pip_packages:
         type: bool
         default: true
         description: >-

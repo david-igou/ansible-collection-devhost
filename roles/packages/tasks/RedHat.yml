@@ -2,24 +2,11 @@
 - name: Install core packages
   ansible.builtin.dnf:
     name:
-      - podman
-      - buildah
-      - skopeo
-      - fuse-overlayfs
-      - slirp4netns
-      - shadow-utils
-      - catatonit
       - git
       - jq
       - make
       - curl
     state: present
-
-- name: Install podman-docker
-  ansible.builtin.dnf:
-    name: podman-docker
-    state: present
-  when: packages_install_podman_docker
 
 - name: Install distro Node.js packages
   ansible.builtin.dnf:
@@ -30,7 +17,6 @@
   when: not packages_install_nodejs_pinned
 
 - name: Add 1Password yum repository
-
   ansible.builtin.yum_repository:
     name: 1password
     description: 1Password CLI
@@ -41,14 +27,12 @@
   when: packages_install_onepassword
 
 - name: Install 1Password CLI
-
   ansible.builtin.dnf:
     name: 1password-cli
     state: present
   when: packages_install_onepassword
 
 - name: Add GitHub CLI yum repository
-
   ansible.builtin.yum_repository:
     name: github-cli
     description: GitHub CLI
@@ -59,7 +43,6 @@
   when: packages_install_github_cli
 
 - name: Install GitHub CLI
-
   ansible.builtin.dnf:
     name: gh
     state: present
@@ -81,36 +64,6 @@
   when:
     - packages_install_extra_packages
     - ansible_facts.distribution != 'Fedora'
-
-- name: Install Docker CE CLI
-  when: packages_install_docker_cli
-  vars:
-    __packages_docker_distro: "{{ 'fedora' if ansible_facts.distribution == 'Fedora' else 'centos' }}"
-  block:
-    - name: Add Docker CE yum repository
-      ansible.builtin.yum_repository:
-        name: docker-ce
-        description: Docker CE Stable
-        baseurl: "https://download.docker.com/linux/{{ __packages_docker_distro }}/$releasever/$basearch/stable"
-        gpgkey: "https://download.docker.com/linux/centos/gpg"
-        gpgcheck: true
-        enabled: true
-
-    - name: Remove podman-docker to avoid conflict
-      ansible.builtin.dnf:
-        name: podman-docker
-        state: absent
-
-    - name: Install docker-ce-cli
-      ansible.builtin.dnf:
-        name: docker-ce-cli
-        state: present
-
-    - name: Install docker-compose-plugin
-      ansible.builtin.dnf:
-        name: docker-compose-plugin
-        state: present
-      when: packages_install_docker_compose_plugin
 
 - name: Install extra packages
   ansible.builtin.dnf:

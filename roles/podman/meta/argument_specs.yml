@@ -1,8 +1,10 @@
 ---
 argument_specs:
   main:
-    short_description: Configure Podman for the target user
+    short_description: Install and configure Podman for the target user
     description:
+      - Installs podman, buildah, skopeo, and supporting packages.
+      - Optionally installs podman-docker for Docker CLI compatibility.
       - Tunes kernel parameters for rootless containers.
       - Configures subuid/subgid mappings.
       - Enables lingering so user services survive logout.
@@ -10,6 +12,13 @@ argument_specs:
       - Activates the podman socket in user scope.
       - Optionally symlinks docker.sock to the podman socket.
     options:
+      podman_docker_compat:
+        type: bool
+        default: true
+        description: >-
+          Install the podman-docker package, which provides a docker CLI
+          shim that delegates to podman. Disable when using the docker
+          role to avoid file conflicts on /usr/bin/docker.
       podman_rootless:
         type: bool
         default: true
