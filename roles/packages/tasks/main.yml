@@ -143,6 +143,461 @@
     - packages_install_virtctl
     - packages_virtctl_version not in (__packages_virtctl_check.stdout | default(''))
 
+- name: Check installed argocd version
+  ansible.builtin.command:
+    cmd: argocd version --client --short
+  register: __packages_argocd_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_argocd
+
+- name: Install argocd
+  ansible.builtin.get_url:
+    url: "https://github.com/argoproj/argo-cd/releases/download/{{ packages_argocd_version }}/argocd-linux-{{ __packages_arch }}"
+    dest: /usr/local/bin/argocd
+    mode: "0755"
+    force: true
+  become: true
+  when:
+    - packages_install_argocd
+    - >-
+      (packages_argocd_version | regex_replace('^v', ''))
+      not in (__packages_argocd_check.stdout | default(''))
+
+- name: Check installed flux version
+  ansible.builtin.command:
+    cmd: flux version --client
+  register: __packages_flux_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_flux
+
+- name: Download flux tarball
+  vars:
+    __packages_flux_ver: "{{ packages_flux_version | regex_replace('^v', '') }}"
+    __packages_flux_tarball: "flux_{{ __packages_flux_ver }}_linux_{{ __packages_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "https://github.com/fluxcd/flux2/releases/download/{{ packages_flux_version }}/{{ __packages_flux_tarball }}"
+    dest: "/tmp/{{ __packages_flux_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_flux
+    - >-
+      (packages_flux_version | regex_replace('^v', ''))
+      not in (__packages_flux_check.stdout | default(''))
+
+- name: Install flux
+  vars:
+    __packages_flux_ver: "{{ packages_flux_version | regex_replace('^v', '') }}"
+    __packages_flux_tarball: "flux_{{ __packages_flux_ver }}_linux_{{ __packages_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_flux_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - flux
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_flux
+    - >-
+      (packages_flux_version | regex_replace('^v', ''))
+      not in (__packages_flux_check.stdout | default(''))
+
+- name: Check installed kubeseal version
+  ansible.builtin.command:
+    cmd: kubeseal --version
+  register: __packages_kubeseal_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_kubeseal
+
+- name: Download kubeseal tarball
+  vars:
+    __packages_kubeseal_ver: "{{ packages_kubeseal_version | regex_replace('^v', '') }}"
+    __packages_kubeseal_tarball: "kubeseal-{{ __packages_kubeseal_ver }}-linux-{{ __packages_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "https://github.com/bitnami-labs/sealed-secrets/releases/download/{{ packages_kubeseal_version }}/{{ __packages_kubeseal_tarball }}"
+    dest: "/tmp/{{ __packages_kubeseal_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_kubeseal
+    - >-
+      (packages_kubeseal_version | regex_replace('^v', ''))
+      not in (__packages_kubeseal_check.stdout | default(''))
+
+- name: Install kubeseal
+  vars:
+    __packages_kubeseal_ver: "{{ packages_kubeseal_version | regex_replace('^v', '') }}"
+    __packages_kubeseal_tarball: "kubeseal-{{ __packages_kubeseal_ver }}-linux-{{ __packages_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_kubeseal_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - kubeseal
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_kubeseal
+    - >-
+      (packages_kubeseal_version | regex_replace('^v', ''))
+      not in (__packages_kubeseal_check.stdout | default(''))
+
+- name: Check installed tkn version
+  ansible.builtin.command:
+    cmd: tkn version
+  register: __packages_tkn_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_tkn
+
+- name: Download tkn tarball
+  vars:
+    __packages_tkn_ver: "{{ packages_tkn_version | regex_replace('^v', '') }}"
+    __packages_tkn_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'aarch64' }}"
+    __packages_tkn_tarball: "tkn_{{ __packages_tkn_ver }}_Linux_{{ __packages_tkn_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "https://github.com/tektoncd/cli/releases/download/{{ packages_tkn_version }}/{{ __packages_tkn_tarball }}"
+    dest: "/tmp/{{ __packages_tkn_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_tkn
+    - >-
+      (packages_tkn_version | regex_replace('^v', ''))
+      not in (__packages_tkn_check.stdout | default(''))
+
+- name: Install tkn
+  vars:
+    __packages_tkn_ver: "{{ packages_tkn_version | regex_replace('^v', '') }}"
+    __packages_tkn_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'aarch64' }}"
+    __packages_tkn_tarball: "tkn_{{ __packages_tkn_ver }}_Linux_{{ __packages_tkn_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_tkn_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - tkn
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_tkn
+    - >-
+      (packages_tkn_version | regex_replace('^v', ''))
+      not in (__packages_tkn_check.stdout | default(''))
+
+- name: Check installed terraform version
+  ansible.builtin.command:
+    cmd: terraform version
+  register: __packages_terraform_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_terraform
+
+- name: Download terraform zip
+  vars:
+    __packages_terraform_ver: "{{ packages_terraform_version | regex_replace('^v', '') }}"
+    __packages_terraform_zip: "terraform_{{ __packages_terraform_ver }}_linux_{{ __packages_arch }}.zip"
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/{{ __packages_terraform_ver }}/{{ __packages_terraform_zip }}"
+    dest: "/tmp/{{ __packages_terraform_zip }}"
+    mode: "0644"
+  when:
+    - packages_install_terraform
+    - >-
+      (packages_terraform_version | regex_replace('^v', ''))
+      not in (__packages_terraform_check.stdout | default(''))
+
+- name: Install terraform
+  vars:
+    __packages_terraform_ver: "{{ packages_terraform_version | regex_replace('^v', '') }}"
+    __packages_terraform_zip: "terraform_{{ __packages_terraform_ver }}_linux_{{ __packages_arch }}.zip"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_terraform_zip }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - terraform
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_terraform
+    - >-
+      (packages_terraform_version | regex_replace('^v', ''))
+      not in (__packages_terraform_check.stdout | default(''))
+
+- name: Check installed sops version
+  ansible.builtin.command:
+    cmd: sops --version
+  register: __packages_sops_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_sops
+
+- name: Install sops
+  ansible.builtin.get_url:
+    url: "https://github.com/getsops/sops/releases/download/{{ packages_sops_version }}/sops-{{ packages_sops_version }}.linux.{{ __packages_arch }}"
+    dest: /usr/local/bin/sops
+    mode: "0755"
+    force: true
+  become: true
+  when:
+    - packages_install_sops
+    - >-
+      (packages_sops_version | regex_replace('^v', ''))
+      not in (__packages_sops_check.stdout | default(''))
+
+- name: Check if oc is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/oc
+  register: __packages_oc_check
+  when: packages_install_oc
+
+- name: Download oc tarball
+  vars:
+    __packages_oc_suffix: "{{ '-arm64' if __packages_arch == 'arm64' else '' }}"
+  ansible.builtin.get_url:
+    url: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ packages_oc_version }}/openshift-client-linux{{ __packages_oc_suffix }}.tar.gz"
+    dest: "/tmp/openshift-client-linux.tar.gz"
+    mode: "0644"
+  when:
+    - packages_install_oc
+    - not (__packages_oc_check.stat.exists | default(false))
+
+- name: Install oc
+  ansible.builtin.unarchive:
+    src: "/tmp/openshift-client-linux.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - oc
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_oc
+    - not (__packages_oc_check.stat.exists | default(false))
+
+- name: Check installed kubeconform version
+  ansible.builtin.command:
+    cmd: kubeconform -v
+  register: __packages_kubeconform_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_kubeconform
+
+- name: Download kubeconform tarball
+  ansible.builtin.get_url:
+    url: "https://github.com/yannh/kubeconform/releases/download/{{ packages_kubeconform_version }}/kubeconform-linux-{{ __packages_arch }}.tar.gz"
+    dest: "/tmp/kubeconform-linux-{{ __packages_arch }}.tar.gz"
+    mode: "0644"
+  when:
+    - packages_install_kubeconform
+    - >-
+      (packages_kubeconform_version | regex_replace('^v', ''))
+      not in (__packages_kubeconform_check.stdout | default(''))
+
+- name: Install kubeconform
+  ansible.builtin.unarchive:
+    src: "/tmp/kubeconform-linux-{{ __packages_arch }}.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - kubeconform
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_kubeconform
+    - >-
+      (packages_kubeconform_version | regex_replace('^v', ''))
+      not in (__packages_kubeconform_check.stdout | default(''))
+
+- name: Check installed kube-burner version
+  ansible.builtin.command:
+    cmd: kube-burner version
+  register: __packages_kube_burner_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_kube_burner
+
+- name: Download kube-burner tarball
+  vars:
+    __packages_kb_ver: "{{ packages_kube_burner_version | regex_replace('^v', 'V') }}"
+    __packages_kb_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_kb_tarball: "kube-burner-{{ __packages_kb_ver }}-linux-{{ __packages_kb_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "https://github.com/kube-burner/kube-burner/releases/download/{{ packages_kube_burner_version }}/{{ __packages_kb_tarball }}"
+    dest: "/tmp/{{ __packages_kb_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_kube_burner
+    - >-
+      (packages_kube_burner_version | regex_replace('^v', ''))
+      not in (__packages_kube_burner_check.stdout | default(''))
+
+- name: Install kube-burner
+  vars:
+    __packages_kb_ver: "{{ packages_kube_burner_version | regex_replace('^v', 'V') }}"
+    __packages_kb_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_kb_tarball: "kube-burner-{{ __packages_kb_ver }}-linux-{{ __packages_kb_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_kb_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - kube-burner
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_kube_burner
+    - >-
+      (packages_kube_burner_version | regex_replace('^v', ''))
+      not in (__packages_kube_burner_check.stdout | default(''))
+
+- name: Check installed kube-burner-ocp version
+  ansible.builtin.command:
+    cmd: kube-burner-ocp version
+  register: __packages_kube_burner_ocp_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_kube_burner_ocp
+
+- name: Download kube-burner-ocp tarball
+  vars:
+    __packages_kbo_ver: "{{ packages_kube_burner_ocp_version | regex_replace('^v', 'V') }}"
+    __packages_kbo_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_kbo_tarball: "kube-burner-ocp-{{ __packages_kbo_ver }}-linux-{{ __packages_kbo_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "https://github.com/kube-burner/kube-burner-ocp/releases/download/{{ packages_kube_burner_ocp_version }}/{{ __packages_kbo_tarball }}"
+    dest: "/tmp/{{ __packages_kbo_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_kube_burner_ocp
+    - >-
+      (packages_kube_burner_ocp_version | regex_replace('^v', ''))
+      not in (__packages_kube_burner_ocp_check.stdout | default(''))
+
+- name: Install kube-burner-ocp
+  vars:
+    __packages_kbo_ver: "{{ packages_kube_burner_ocp_version | regex_replace('^v', 'V') }}"
+    __packages_kbo_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_kbo_tarball: "kube-burner-ocp-{{ __packages_kbo_ver }}-linux-{{ __packages_kbo_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_kbo_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - kube-burner-ocp
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_kube_burner_ocp
+    - >-
+      (packages_kube_burner_ocp_version | regex_replace('^v', ''))
+      not in (__packages_kube_burner_ocp_check.stdout | default(''))
+
+- name: Check installed act version
+  ansible.builtin.command:
+    cmd: act --version
+  register: __packages_act_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_act
+
+- name: Download act tarball
+  vars:
+    __packages_act_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_act_tarball: "act_Linux_{{ __packages_act_arch }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "https://github.com/nektos/act/releases/download/{{ packages_act_version }}/{{ __packages_act_tarball }}"
+    dest: "/tmp/{{ __packages_act_tarball }}"
+    mode: "0644"
+  when:
+    - packages_install_act
+    - >-
+      (packages_act_version | regex_replace('^v', ''))
+      not in (__packages_act_check.stdout | default(''))
+
+- name: Install act
+  vars:
+    __packages_act_arch: "{{ 'x86_64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_act_tarball: "act_Linux_{{ __packages_act_arch }}.tar.gz"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_act_tarball }}"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - act
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_act
+    - >-
+      (packages_act_version | regex_replace('^v', ''))
+      not in (__packages_act_check.stdout | default(''))
+
+- name: Check if mc is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/mc
+  register: __packages_mc_check
+  when: packages_install_mc
+
+- name: Install mc
+  ansible.builtin.get_url:
+    url: "https://dl.min.io/client/mc/release/linux-{{ __packages_arch }}/mc"
+    dest: /usr/local/bin/mc
+    mode: "0755"
+  become: true
+  when:
+    - packages_install_mc
+    - not (__packages_mc_check.stat.exists | default(false))
+
+- name: Check installed rclone version
+  ansible.builtin.command:
+    cmd: rclone version
+  register: __packages_rclone_check
+  changed_when: false
+  failed_when: false
+  when: packages_install_rclone
+
+- name: Download rclone zip
+  vars:
+    __packages_rclone_zip: "rclone-{{ packages_rclone_version }}-linux-{{ __packages_arch }}.zip"
+  ansible.builtin.get_url:
+    url: "https://github.com/rclone/rclone/releases/download/{{ packages_rclone_version }}/{{ __packages_rclone_zip }}"
+    dest: "/tmp/{{ __packages_rclone_zip }}"
+    mode: "0644"
+  when:
+    - packages_install_rclone
+    - >-
+      (packages_rclone_version | regex_replace('^v', ''))
+      not in (__packages_rclone_check.stdout | default(''))
+
+- name: Extract rclone zip
+  vars:
+    __packages_rclone_zip: "rclone-{{ packages_rclone_version }}-linux-{{ __packages_arch }}.zip"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ __packages_rclone_zip }}"
+    dest: /tmp
+    remote_src: true
+  when:
+    - packages_install_rclone
+    - >-
+      (packages_rclone_version | regex_replace('^v', ''))
+      not in (__packages_rclone_check.stdout | default(''))
+
+- name: Install rclone
+  ansible.builtin.copy:
+    src: "/tmp/rclone-{{ packages_rclone_version }}-linux-{{ __packages_arch }}/rclone"
+    dest: /usr/local/bin/rclone
+    mode: "0755"
+    remote_src: true
+  become: true
+  when:
+    - packages_install_rclone
+    - >-
+      (packages_rclone_version | regex_replace('^v', ''))
+      not in (__packages_rclone_check.stdout | default(''))
+
 - name: Map system architecture to Node.js architecture
   ansible.builtin.set_fact:
     __packages_nodejs_arch: "{{ 'x64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"

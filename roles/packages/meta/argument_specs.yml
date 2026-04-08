@@ -6,6 +6,7 @@ argument_specs:
       - Installs core packages (git, jq, make, curl) via distro package manager.
       - Configures optional third-party repositories (1Password, GitHub CLI).
       - Installs pinned versions of kubectl, helm, kustomize, virtctl, and Node.js.
+      - Downloads and installs additional binary CLI tools for GitOps, infrastructure, and Kubernetes workflows.
       - Installs pip packages and npm-based CLI tools.
     options:
       packages_install_onepassword:
@@ -48,6 +49,72 @@ argument_specs:
         default: true
         description: >-
           Install virtctl at the version specified by packages_virtctl_version.
+      packages_install_argocd:
+        type: bool
+        default: true
+        description: >-
+          Install Argo CD CLI at the version specified by packages_argocd_version.
+      packages_install_flux:
+        type: bool
+        default: true
+        description: >-
+          Install Flux CLI at the version specified by packages_flux_version.
+      packages_install_kubeseal:
+        type: bool
+        default: true
+        description: >-
+          Install kubeseal at the version specified by packages_kubeseal_version.
+      packages_install_tkn:
+        type: bool
+        default: true
+        description: >-
+          Install Tekton CLI (tkn) at the version specified by packages_tkn_version.
+      packages_install_terraform:
+        type: bool
+        default: true
+        description: >-
+          Install Terraform at the version specified by packages_terraform_version.
+      packages_install_sops:
+        type: bool
+        default: true
+        description: >-
+          Install SOPS at the version specified by packages_sops_version.
+      packages_install_oc:
+        type: bool
+        default: true
+        description: >-
+          Install the OpenShift CLI (oc) from the OCP mirror.
+          Uses the channel or version specified by packages_oc_version.
+      packages_install_kubeconform:
+        type: bool
+        default: true
+        description: >-
+          Install kubeconform at the version specified by packages_kubeconform_version.
+      packages_install_kube_burner:
+        type: bool
+        default: true
+        description: >-
+          Install kube-burner at the version specified by packages_kube_burner_version.
+      packages_install_kube_burner_ocp:
+        type: bool
+        default: true
+        description: >-
+          Install kube-burner-ocp at the version specified by packages_kube_burner_ocp_version.
+      packages_install_act:
+        type: bool
+        default: true
+        description: >-
+          Install act (GitHub Actions local runner) at the version specified by packages_act_version.
+      packages_install_mc:
+        type: bool
+        default: true
+        description: >-
+          Install the MinIO Client (mc) from the official MinIO CDN.
+      packages_install_rclone:
+        type: bool
+        default: true
+        description: >-
+          Install rclone at the version specified by packages_rclone_version.
       packages_install_extra_packages:
         type: bool
         default: true

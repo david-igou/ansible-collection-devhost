@@ -1,0 +1,8 @@
+---
+minor_changes:
+  - >-
+    packages role - Add 13 binary CLI tool downloads: argocd, flux, kubeseal,
+    tkn, terraform, sops, oc, kubeconform, kube-burner, kube-burner-ocp, act,
+    mc, and rclone. Each tool is gated behind a ``packages_install_*`` flag
+    and version-pinned in ``defaults/main.yml``
+    (https://github.com/david-igou/ansible-collection-devhost/issues/7).

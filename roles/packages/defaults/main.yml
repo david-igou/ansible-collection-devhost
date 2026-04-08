@@ -7,6 +7,19 @@ packages_install_kubectl: true
 packages_install_helm: true
 packages_install_kustomize: true
 packages_install_virtctl: true
+packages_install_argocd: true
+packages_install_flux: true
+packages_install_kubeseal: true
+packages_install_tkn: true
+packages_install_terraform: true
+packages_install_sops: true
+packages_install_oc: true
+packages_install_kubeconform: true
+packages_install_kube_burner: true
+packages_install_kube_burner_ocp: true
+packages_install_act: true
+packages_install_mc: true
+packages_install_rclone: true
 packages_install_extra_packages: true
 packages_install_nodejs_pinned: true
 
@@ -150,3 +163,38 @@ packages_kustomize_version: "v5.8.1"
 
 # renovate: datasource=github-releases depName=kubevirt/kubevirt
 packages_virtctl_version: "v1.8.0"
+
+# renovate: datasource=github-releases depName=argoproj/argo-cd
+packages_argocd_version: "v3.3.4"
+
+# renovate: datasource=github-releases depName=fluxcd/flux2
+packages_flux_version: "v2.8.3"
+
+# renovate: datasource=github-releases depName=bitnami-labs/sealed-secrets
+packages_kubeseal_version: "v0.36.1"
+
+# renovate: datasource=github-releases depName=tektoncd/cli
+packages_tkn_version: "v0.44.0"
+
+# renovate: datasource=github-releases depName=hashicorp/terraform
+packages_terraform_version: "v1.14.8"
+
+# renovate: datasource=github-releases depName=getsops/sops
+packages_sops_version: "v3.12.2"
+
+packages_oc_version: "latest"
+
+# renovate: datasource=github-releases depName=yannh/kubeconform
+packages_kubeconform_version: "v0.7.0"
+
+# renovate: datasource=github-releases depName=kube-burner/kube-burner
+packages_kube_burner_version: "v2.4.2"
+
+# renovate: datasource=github-releases depName=kube-burner/kube-burner-ocp
+packages_kube_burner_ocp_version: "v1.11.4"
+
+# renovate: datasource=github-releases depName=nektos/act
+packages_act_version: "v0.2.84"
+
+# renovate: datasource=github-releases depName=rclone/rclone
+packages_rclone_version: "v1.73.2"
