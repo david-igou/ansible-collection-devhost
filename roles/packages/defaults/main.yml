@@ -165,7 +165,7 @@ packages_kustomize_version: "v5.8.1"
 packages_virtctl_version: "v1.8.0"
 
 # renovate: datasource=github-releases depName=argoproj/argo-cd
-packages_argocd_version: "v3.3.4"
+packages_argocd_version: "v3.3.6"
 
 # renovate: datasource=github-releases depName=fluxcd/flux2
 packages_flux_version: "v2.8.3"
