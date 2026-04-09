@@ -1,5 +1,11 @@
 # david_igou.devhost
 
+![Galaxy Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgalaxy.ansible.com%2Fapi%2Fv3%2Fplugin%2Fansible%2Fcontent%2Fpublished%2Fcollections%2Findex%2Fdavid_igou%2Fdevhost%2F&query=%24.highest_version.version&label=galaxy)
+![Ansible](https://img.shields.io/badge/ansible-%3E%3D2.16-blue?logo=ansible)
+![CI](https://img.shields.io/github/actions/workflow/status/david-igou/ansible-collection-devhost/tests.yml?branch=main&label=CI)
+![License](https://img.shields.io/github/license/david-igou/ansible-collection-devhost)
+![Last Commit](https://img.shields.io/github/last-commit/david-igou/ansible-collection-devhost)
+
 Ansible collection that provisions a bare Linux host for VS Code/Cursor remote-server and devcontainer workflows. It installs system and CLI packages, configures rootless Podman and/or Docker CE, and sets up user-level directories, git config, and seed files.
 
 ## Requirements
