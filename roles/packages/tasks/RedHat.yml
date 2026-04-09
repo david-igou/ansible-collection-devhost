@@ -6,6 +6,7 @@
       - jq
       - make
       - curl
+      - unzip
     state: present
 
 - name: Install distro Node.js packages

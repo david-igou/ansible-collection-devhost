@@ -16,21 +16,19 @@
     host_prep_onepassword_service_account_token: "test-token-value"
     host_prep_devcontainer_repository: ""
     host_prep_workspace_repositories: []
-    packages_install_onepassword: true
+
+  roles:
+    - role: david_igou.devhost.host_prep
 
   pre_tasks:
+
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
       become: true
       when: ansible_facts.os_family == "Debian"
 
-    - name: Install git
+    - name: ensure git package is installed
       ansible.builtin.package:
         name: git
         state: present
-      become: true
-
-  roles:
-    - role: david_igou.devhost.packages
-    - role: david_igou.devhost.host_prep

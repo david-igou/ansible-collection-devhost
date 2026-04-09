@@ -1,5 +1,5 @@
 ---
-podman_docker_compat: true
+podman_docker_compat: false
 podman_rootless: true
 
 podman_subuid_start: 100000

@@ -5,10 +5,10 @@
   become: false
 
   vars:
-    packages_install_onepassword: false
+    packages_install_onepassword: true
     packages_install_github_cli: false
-    packages_install_claude_code: false
-    packages_install_cursor_agent: false
+    packages_install_claude_code: true
+    packages_install_cursor_agent: true
     packages_install_kubectl: false
     packages_install_helm: false
     packages_install_kustomize: false
@@ -27,7 +27,10 @@
       export EDITOR=vim
     host_prep_onepassword_service_account_token: "test-token-value"
     host_prep_devcontainer_repository: "https://github.com/igou-io/igou-devenv.git"
-    host_prep_workspace_repositories: []
+    host_prep_workspace_repositories:
+      - "https://github.com/igou-io/igou-ansible.git"
+      - "https://github.com/igou-io/igou-openshift.git"
+      - "https://github.com/igou-io/igou-containers.git"
     podman_docker_compat: false
     podman_docker_socket_symlink: false
     podman_configure_storage_conf: true

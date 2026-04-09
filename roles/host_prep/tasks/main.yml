@@ -1,4 +1,10 @@
 ---
+- name: Ensure .gitconfig is absent
+  ansible.builtin.file:
+    path: "{{ ansible_facts.env.HOME }}/.gitconfig"
+    state: absent
+  when: host_prep_git_github_ssh_rewrite
+
 - name: Create bind-mount target directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -6,41 +12,12 @@
     mode: "0755"
   loop: "{{ host_prep_directories }}"
 
-- name: Create seed gitconfig
-  ansible.builtin.file:
-    path: "{{ ansible_facts.env.HOME }}/.gitconfig"
-    state: touch
-    mode: "0644"
-    modification_time: preserve
-    access_time: preserve
-
 - name: Create seed claude.json
   ansible.builtin.copy:
     content: "{}"
     dest: "{{ ansible_facts.env.HOME }}/.claude.json"
     force: false
     mode: "0644"
-
-- name: Set git user.name
-  community.general.git_config:
-    name: user.name
-    scope: global
-    value: "{{ host_prep_git_user_name }}"
-  when: host_prep_git_user_name | length > 0
-
-- name: Set git user.email
-  community.general.git_config:
-    name: user.email
-    scope: global
-    value: "{{ host_prep_git_user_email }}"
-  when: host_prep_git_user_email | length > 0
-
-- name: Configure GitHub SSH URL rewrite
-  community.general.git_config:
-    name: "url.git@github.com:.insteadOf"
-    scope: global
-    value: "https://github.com/"
-  when: host_prep_git_github_ssh_rewrite
 
 - name: Write 1Password service account token
   ansible.builtin.copy:
@@ -83,3 +60,32 @@
     SSH_AUTH_SOCK: "{{ ansible_facts.env.SSH_AUTH_SOCK | default('') }}"
   loop: "{{ host_prep_workspace_repositories }}"
   when: host_prep_workspace_repositories | length > 0
+
+- name: Create seed gitconfig
+  ansible.builtin.file:
+    path: "{{ ansible_facts.env.HOME }}/.gitconfig"
+    state: touch
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+
+- name: Set git user.name
+  community.general.git_config:
+    name: user.name
+    scope: global
+    value: "{{ host_prep_git_user_name }}"
+  when: host_prep_git_user_name | length > 0
+
+- name: Set git user.email
+  community.general.git_config:
+    name: user.email
+    scope: global
+    value: "{{ host_prep_git_user_email }}"
+  when: host_prep_git_user_email | length > 0
+
+- name: Configure GitHub SSH URL rewrite
+  community.general.git_config:
+    name: "url.git@github.com:.insteadOf"
+    scope: global
+    value: "https://github.com/"
+  when: host_prep_git_github_ssh_rewrite
