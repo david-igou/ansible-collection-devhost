@@ -1,7 +1,7 @@
 ---
 namespace: david_igou
 name: devhost
-version: 0.1.0
+version: 26.4.0
 readme: README.md
 authors:
   - David Igou

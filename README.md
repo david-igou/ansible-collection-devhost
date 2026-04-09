@@ -1,78 +1,108 @@
-# David_igou Devhost Collection
+# david_igou.devhost
 
-This repository contains the `david_igou.devhost` Ansible Collection.
+Ansible collection that provisions a bare Linux host for VS Code/Cursor remote-server and devcontainer workflows. It installs system and CLI packages, configures rootless Podman and/or Docker CE, and sets up user-level directories, git config, and seed files.
 
-<!--start requires_ansible-->
-<!--end requires_ansible-->
+## Requirements
 
-## External requirements
+- Ansible >= 2.16
+- Supported platforms: Debian (bookworm), Ubuntu (jammy, noble), RHEL/CentOS 9
 
-Some modules and plugins require external libraries. Please check the
-requirements for each plugin or module you use in the documentation to find out
-which requirements are needed.
+### Collection dependencies
 
-## Included content
+| Collection | Version |
+|---|---|
+| `community.general` | >= 8.0.0 |
+| `ansible.posix` | >= 1.5.0 |
 
-<!--start collection content-->
-<!--end collection content-->
+## Included roles
 
-## Using this collection
+| Role | Description |
+|---|---|
+| [`host_prep`](roles/host_prep/) | User-level setup: bind-mount directories, seed files, git config, SSH rewrite, repository cloning |
+| [`packages`](roles/packages/) | System packages, third-party repos, versioned CLI binaries, pip packages, devcontainer CLI |
+| [`podman`](roles/podman/) | Podman installation, kernel tuning, rootless config, socket activation, storage config |
+| [`docker`](roles/docker/) | Docker CE lifecycle: repo setup, CLI, compose plugin, daemon config, rootless mode |
+
+## Installation
 
 ```bash
-    ansible-galaxy collection install david_igou.devhost
+ansible-galaxy collection install david_igou.devhost
 ```
 
-You can also include it in a `requirements.yml` file and install it via
-`ansible-galaxy collection install -r requirements.yml` using the format:
+Or in a `requirements.yml`:
 
 ```yaml
+---
 collections:
   - name: david_igou.devhost
 ```
 
-To upgrade the collection to the latest available version, run the following
-command:
+## Usage
+
+The entry-point playbook runs all roles in order against the `devhosts` host group:
 
 ```bash
-ansible-galaxy collection install david_igou.devhost --upgrade
+ansible-playbook david_igou.devhost.site -c local -K
 ```
 
-You can also install a specific version of the collection, for example, if you
-need to downgrade when something is broken in the latest version (please report
-an issue in this repository). Use the following syntax where `X.Y.Z` can be any
-[available version](https://galaxy.ansible.com/david_igou/devhost):
+Dry-run with diff output:
 
 ```bash
-ansible-galaxy collection install david_igou.devhost:==X.Y.Z
+ansible-playbook david_igou.devhost.site -c local --check --diff -K
 ```
 
-See
-[Ansible Using Collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html)
-for more details.
+Each role can also be used independently:
+
+```yaml
+---
+- name: Install packages only
+  hosts: devhosts
+  gather_facts: true
+  roles:
+    - role: david_igou.devhost.packages
+```
+
+## Testing
+
+[Molecule](https://ansible.readthedocs.io/projects/molecule/) scenarios live in `extensions/molecule/`. Available scenarios: `host_prep`, `packages`, `podman`, `docker`, `container_runtimes`, `default`.
+
+```bash
+# Run a specific scenario
+molecule test -s packages
+
+# Converge only (skip destroy)
+molecule converge -s host_prep
+
+# Run verify against an already-converged instance
+molecule verify -s host_prep
+```
+
+### Provisioners
+
+Scenarios use a pluggable provisioner pattern (default: `podman`). Set the `PROVISIONER` env var to switch:
+
+```bash
+# Run with KubeVirt VMs instead of containers
+PROVISIONER=kubevirt molecule test -s packages
+```
+
+Available provisioners: `podman` (CI default), `kubevirt` (OpenShift/Kubernetes VMs).
+
+### Makefile targets
+
+```
+make lint               # Run ansible-lint
+make molecule           # Run molecule test (SCENARIO=default PROVISIONER=podman)
+make molecule-kubevirt  # Run molecule test against KubeVirt
+make test               # Run lint then molecule
+make collection-build   # Build the collection tarball
+make collection-install # Build and install locally
+```
 
 ## Release notes
 
-See the
-[changelog](https://github.com/ansible-collections/david_igou.devhost/tree/main/CHANGELOG.rst).
+See the [changelog fragments](changelogs/fragments/) for upcoming changes, or the generated [changelog](changelogs/) after release.
 
-## Roadmap
+## License
 
-<!-- Optional. Include the roadmap for this collection, and the proposed release/versioning strategy so users can anticipate the upgrade/update cycle. -->
-
-## More information
-
-<!-- List out where the user can find additional information, such as working group meeting times, slack/matrix channels, or documentation for the product this collection automates. At a minimum, link to: -->
-
-- [Ansible collection development forum](https://forum.ansible.com/c/project/collection-development/27)
-- [Ansible User guide](https://docs.ansible.com/ansible/devel/user_guide/index.html)
-- [Ansible Developer guide](https://docs.ansible.com/ansible/devel/dev_guide/index.html)
-- [Ansible Collections Checklist](https://docs.ansible.com/ansible/devel/community/collection_contributors/collection_requirements.html)
-- [Ansible Community code of conduct](https://docs.ansible.com/ansible/devel/community/code_of_conduct.html)
-- [The Bullhorn (the Ansible Contributor newsletter)](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn)
-- [News for Maintainers](https://forum.ansible.com/tag/news-for-maintainers)
-
-## Licensing
-
-GNU General Public License v3.0 or later.
-
-See [LICENSE](https://www.gnu.org/licenses/gpl-3.0.txt) to see the full text.
+GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
