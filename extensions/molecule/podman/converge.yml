@@ -4,13 +4,13 @@
   gather_facts: true
   become: false
 
-  pre_tasks:
-    - name: Wait for cloud-init to finish
-      ansible.builtin.command:
-        cmd: cloud-init status --wait
-      changed_when: false
-      become: true
-      failed_when: false
+  vars:
+    podman_rootless: false
+    podman_docker_compat: false
+    podman_docker_socket_symlink: false
+    podman_configure_containers_conf: false
+    podman_configure_storage_conf: false
+    podman_enable_linger: false
 
   roles:
     - role: david_igou.devhost.podman

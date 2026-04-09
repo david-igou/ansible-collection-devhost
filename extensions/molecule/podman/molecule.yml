@@ -1,4 +1,6 @@
 ---
+# Minimal podman scenario: installs the podman role and verifies
+# the podman binary is present by running "podman --version".
 dependency:
   name: galaxy
   options:

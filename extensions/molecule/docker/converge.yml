@@ -5,17 +5,17 @@
   become: false
 
   vars:
-    podman_docker_compat: false
-    podman_docker_socket_symlink: false
+    docker_install_daemon: false
+    docker_rootless: false
 
   pre_tasks:
-    - name: Wait for cloud-init to finish
-      ansible.builtin.command:
-        cmd: cloud-init status --wait
-      changed_when: false
+    - name: Install gnupg for Docker CE GPG key import
+      ansible.builtin.apt:
+        name: gnupg
+        state: present
+        update_cache: true
       become: true
-      failed_when: false
+      when: ansible_facts.os_family == "Debian"
 
   roles:
-    - role: david_igou.devhost.podman
     - role: david_igou.devhost.docker

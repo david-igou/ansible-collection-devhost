@@ -1,8 +1,10 @@
 ---
+# Minimal docker scenario: installs the docker role and verifies
+# the docker binary is present by running "docker --version".
 dependency:
   name: galaxy
   options:
-    requirements-file: extensions/molecule/provisioners/${PROVISIONER:-kubevirt}/requirements.yml
+    requirements-file: extensions/molecule/provisioners/${PROVISIONER:-podman}/requirements.yml
     force: true
 driver:
   name: default
@@ -51,13 +53,13 @@ provisioner:
   name: ansible
   playbooks:
     converge: converge.yml
-    create: ../provisioners/${PROVISIONER:-kubevirt}/create.yml
-    destroy: ../provisioners/${PROVISIONER:-kubevirt}/destroy.yml
-    prepare: ../provisioners/${PROVISIONER:-kubevirt}/prepare.yml
+    create: ../provisioners/${PROVISIONER:-podman}/create.yml
+    destroy: ../provisioners/${PROVISIONER:-podman}/destroy.yml
+    prepare: ../provisioners/${PROVISIONER:-podman}/prepare.yml
     verify: verify.yml
   inventory:
     links:
-      group_vars: ../provisioners/${PROVISIONER:-kubevirt}/group_vars/
+      group_vars: ../provisioners/${PROVISIONER:-podman}/group_vars/
 verifier:
   name: ansible
 scenario:
