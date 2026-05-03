@@ -1,0 +1,8 @@
+---
+minor_changes:
+  - >-
+    packages role - Bump pinned CLI tool versions: ``kubectl`` to ``v1.36.0``,
+    ``kube-burner`` to ``v2.6.1``, ``ansible-navigator`` to ``26.4.0``,
+    ``ansible-lint`` to ``26.4.0``, ``molecule`` to ``26.4.0``,
+    ``@devcontainers/cli`` to ``0.86.0``, and Node.js to ``v24.15.0``
+    (https://github.com/david-igou/ansible-collection-devhost/pull/32).
