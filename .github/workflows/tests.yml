@@ -14,14 +14,14 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   changelog:
-    uses: ansible/ansible-content-actions/.github/workflows/changelog.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/changelog.yaml@05894f1a7922836072b5a12e80f9c2ed5f489567 # main
     if: github.event_name == 'pull_request'
   build-import:
-    uses: ansible/ansible-content-actions/.github/workflows/build_import.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/build_import.yaml@05894f1a7922836072b5a12e80f9c2ed5f489567 # main
   ansible-lint:
-    uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@05894f1a7922836072b5a12e80f9c2ed5f489567 # main
   sanity:
-    uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@05894f1a7922836072b5a12e80f9c2ed5f489567 # main
   molecule:
     runs-on: ubuntu-latest
     strategy:
