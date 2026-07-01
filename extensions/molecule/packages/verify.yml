@@ -5,33 +5,11 @@
   become: false
 
   vars:
-    # mise-managed CLIs (from igou-devenv's mise.toml) that the role symlinks into
-    # /usr/local/bin, plus the distro/pip/npm CLIs — all should resolve on PATH.
-    _packages_cli_on_path:
-      - kubectl
-      - helm
-      - kustomize
-      - oc
-      - virtctl
-      - argocd
-      - flux
-      - sops
-      - kubeconform
-      - terraform
-      - node
-      - npm
-      - kube-burner
-      - act
-      - rclone
-      - tkn
-      - gh
-      - kind
-      - direnv
-      - age
-      - kubeseal
-      - kube-burner-ocp
-      - tkn-pac
-      - code-server
+    # The mise-managed tool set is verified dynamically from the fetched mise.toml
+    # (via `mise ls` + `mise bin-paths`), so it tracks igou-devenv automatically
+    # instead of a hand-synced list. Only the non-mise CLIs (distro/pip/npm) are
+    # enumerated explicitly here.
+    _packages_nonmise_cli:
       - git
       - jq
       - make
@@ -44,13 +22,50 @@
       - tmux
       - nmap
       - rsync
+    _packages_mise_env:
+      MISE_GLOBAL_CONFIG_FILE: /etc/mise/mise.toml
+      MISE_DATA_DIR: /opt/mise
+      MISE_TRUSTED_CONFIG_PATHS: /etc/mise/mise.toml
 
   tasks:
-    - name: Check each CLI resolves on PATH # noqa: command-instead-of-shell -- command -v is a shell builtin
-      ansible.builtin.shell: "command -v {{ item }}"
-      register: _cli
+    - name: Query mise for any pinned tool that is not installed
+      ansible.builtin.command:
+        cmd: /usr/local/bin/mise ls --missing
+      environment: "{{ _packages_mise_env }}"
+      register: _mise_missing
       changed_when: false
-      loop: "{{ _packages_cli_on_path }}"
+
+    - name: Assert every pinned mise tool is installed at its locked version
+      ansible.builtin.assert:
+        that:
+          - _mise_missing.stdout | trim | length == 0
+        fail_msg: "mise reports tools not installed at their pinned version:\n{{ _mise_missing.stdout }}"
+        success_msg: "all pinned mise tools are installed at their locked versions"
+
+    - name: Assert every mise-managed binary is symlinked into /usr/local/bin # noqa: command-instead-of-shell -- bin-paths pipe + loop
+      ansible.builtin.shell:
+        executable: /usr/bin/bash
+        cmd: |
+          set -euo pipefail
+          missing=""
+          for d in $(/usr/local/bin/mise bin-paths 2>/dev/null); do
+            while IFS= read -r f; do
+              b="$(basename "$f")"
+              [ -e "/usr/local/bin/$b" ] || missing="$missing $b"
+            done < <(find -L "$d" -maxdepth 1 -type f -executable)
+          done
+          if [ -n "$missing" ]; then echo "NOT symlinked into /usr/local/bin:$missing"; exit 1; fi
+          echo "all mise binaries symlinked into /usr/local/bin"
+      environment: "{{ _packages_mise_env }}"
+      register: _mise_symlinks
+      changed_when: false
+
+    - name: Check the non-mise CLIs resolve on PATH # noqa: command-instead-of-shell -- command -v is a shell builtin
+      ansible.builtin.shell: "command -v {{ item }}"
+      register: _nonmise
+      changed_when: false
+      failed_when: _nonmise.rc != 0
+      loop: "{{ _packages_nonmise_cli }}"
       loop_control:
         label: "{{ item }}"
 
@@ -79,6 +94,8 @@
 
     - name: Print verification summary
       ansible.builtin.debug:
-        msg: >-
-          {{ _packages_cli_on_path | length }} CLIs resolve on PATH;
-          devcontainer/claude/agent present in ~/.local/bin.
+        msg:
+          - "{{ _mise_symlinks.stdout }}"
+          - "all pinned mise tools installed at their locked versions"
+          - "{{ _packages_nonmise_cli | length }} non-mise CLIs resolve on PATH"
+          - "devcontainer/claude/agent report versions"

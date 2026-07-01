@@ -7,7 +7,7 @@
 
 - name: Map system architecture for mise
   ansible.builtin.set_fact:
-    __packages_mise_arch: "{{ 'x64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+    __packages_mise_arch: "{{ 'x64' if ansible_facts.architecture == 'x86_64' else 'arm64' }}"
 
 - name: Assemble the mise environment
   ansible.builtin.set_fact:
@@ -16,9 +16,11 @@
       MISE_GLOBAL_CONFIG_FILE: "{{ packages_mise_config_dir }}/mise.toml"
       MISE_TRUSTED_CONFIG_PATHS: "{{ packages_mise_config_dir }}/mise.toml"
 
-- name: Ensure mise install prerequisites are present
+- name: Ensure mise install + runtime prerequisites are present
   ansible.builtin.package:
-    name: "{{ ['tar', 'gzip', 'curl'] + (['gnupg2'] if ansible_facts.os_family == 'RedHat' else ['gnupg']) }}"
+    # libatomic(1) is a runtime dep of mise's prebuilt Node.js (and code-server's
+    # bundled node); minimal CentOS/RHEL images lack it, so node/npm fail to load.
+    name: "{{ ['tar', 'gzip', 'curl'] + (['gnupg2', 'libatomic'] if ansible_facts.os_family == 'RedHat' else ['gnupg', 'libatomic1']) }}"
     state: present
   become: true
 
@@ -34,22 +36,25 @@
     executable: /usr/bin/bash
     cmd: |
       set -euo pipefail
-      ver="{{ packages_mise_version }}"
-      arch="{{ __packages_mise_arch }}"
-      tarball="mise-${ver}-linux-${arch}.tar.gz"
-      base="https://github.com/jdx/mise/releases/download/${ver}"
+      tarball="mise-${MISE_VER}-linux-${MISE_ARCH}.tar.gz"
+      base="https://github.com/jdx/mise/releases/download/${MISE_VER}"
       work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT; cd "$work"
       export GNUPGHOME="${work}/gnupg"; mkdir -p -m 0700 "$GNUPGHOME"
-      curl -fsSL -o key.asc "{{ packages_mise_gpg_url }}"
+      curl -fsSL -o key.asc "${MISE_GPG_URL}"
       gpg --batch --import key.asc
       gpg --list-keys --with-colons --with-fingerprint \
-        | awk -F: '$1=="fpr"{print $10}' | grep -qFx "{{ packages_mise_gpg_fpr }}"
+        | awk -F: '$1=="fpr"{print $10}' | grep -qFx "${MISE_GPG_FPR}"
       curl -fsSL -o "$tarball" "${base}/${tarball}"
       curl -fsSL -o SHASUMS256.asc "${base}/SHASUMS256.asc"
-      gpg --batch --status-fd 1 --verify SHASUMS256.asc 2>/dev/null | grep -qF "VALIDSIG {{ packages_mise_gpg_fpr }}"
+      gpg --batch --status-fd 1 --verify SHASUMS256.asc 2>/dev/null | grep -qF "VALIDSIG ${MISE_GPG_FPR}"
       gpg --batch --decrypt SHASUMS256.asc 2>/dev/null | awk -v f="./${tarball}" '$2==f{print $1"  "f}' | sha256sum -c -
       tar -xz --strip-components=2 -C /usr/local/bin -f "$tarball" mise/bin/mise
       chmod +x /usr/local/bin/mise
+  environment:
+    MISE_VER: "{{ packages_mise_version }}"
+    MISE_ARCH: "{{ __packages_mise_arch }}"
+    MISE_GPG_URL: "{{ packages_mise_gpg_url }}"
+    MISE_GPG_FPR: "{{ packages_mise_gpg_fpr }}"
   become: true
   changed_when: true
   when: (packages_mise_version | regex_replace('^v', '')) not in (__packages_mise_check.stdout | default(''))

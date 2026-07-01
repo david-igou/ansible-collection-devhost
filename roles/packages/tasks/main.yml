@@ -15,7 +15,7 @@
 - name: Install pip packages
   ansible.builtin.pip:
     name: "{{ packages_pip_packages }}"
-    extra_args: --break-system-packages --ignore-installed
+    extra_args: --break-system-packages
   become: true
   when:
     - packages_install_pip_packages
@@ -36,7 +36,7 @@
     - name: Install pip packages from requirements file
       ansible.builtin.pip:
         requirements: "{{ '/tmp/pip-requirements.txt' if packages_pip_requirements is match('https?://') else packages_pip_requirements }}"
-        extra_args: --break-system-packages --ignore-installed
+        extra_args: --break-system-packages
       become: true
 
 - name: Configure npm prefix for user-level global installs
@@ -44,10 +44,11 @@
     cmd: npm config set prefix "{{ ansible_facts.env.HOME }}/.local"
     creates: "{{ ansible_facts.env.HOME }}/.npmrc"
 
-- name: Set npm global prefix to user directory
+- name: Install the devcontainer CLI globally via npm
   community.general.npm:
     name: "@devcontainers/cli"
     version: "{{ packages_devcontainer_cli_version }}"
+    state: present
     global: true
 
 - name: Install Claude Code # noqa: command-instead-of-module risky-shell-pipe

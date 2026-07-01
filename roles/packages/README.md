@@ -39,7 +39,7 @@ Uses `become: true` for system packages, dispatches per-distro tasks via `ansibl
 | `packages_mise_source_ref` | `7cbfb83…` (commit of `v2026.06.29`) | Immutable igou-devenv commit SHA to fetch; bump to advance the toolset |
 | `packages_github_token` | env `GITHUB_TOKEN` | Token for `mise install` (raises the GitHub API rate limit; strongly recommended) |
 
-> **The CLI tool set + versions live in [igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** (the single source of truth), fetched at `packages_mise_source_ref`. Bump tool versions there — igou-devenv owns the `mise.lock` regeneration and the verification audit — and move the `packages_mise_source_ref` pin to a newer igou-devenv commit (SHA) to advance the host toolset. `gh` is part of that set, so `packages_install_github_cli` is redundant while `cli_tools` is enabled.
+> **The CLI tool set + versions live in [igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** (the single source of truth), fetched at `packages_mise_source_ref`. Bump tool versions there — igou-devenv owns the `mise.lock` regeneration and the verification audit — and move the `packages_mise_source_ref` pin to a newer igou-devenv commit (SHA) to advance the host toolset. `gh` is part of that set, so while `cli_tools` is enabled the distro `gh` (`packages_install_github_cli`) is skipped — it is only installed as a fallback when `cli_tools` is disabled.
 
 ### Other pins & lists
 
