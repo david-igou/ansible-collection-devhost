@@ -1,0 +1,106 @@
+# Single source of truth for the CLI tools installed by the david_igou.devhost
+# packages role. Deployed to /etc/mise/mise.toml (system-wide) and installed with
+# `mise install`; binaries are symlinked into /usr/local/bin (no shell activation).
+#
+# Renovate manages versions via the native mise manager. After any version bump,
+# regenerate the lock (`make mise-lock`) and re-run the packages molecule scenario.
+
+[settings]
+# Verification controls — defense in depth.
+paranoid = true
+github_attestations = true
+slsa = true
+
+# Lockfile — pin per-asset SHA256/blake3 across installs.
+lockfile = true
+locked = true
+lockfile_platforms = ["linux-x64", "linux-arm64"]
+
+# Block freshly-published versions (xz-style attack window).
+minimum_release_age = "10d"
+
+# Refuse to load any mise.toml outside this allowlist.
+trusted_config_paths = ["/etc/mise/mise.toml"]
+
+[settings.aqua]
+# Aqua-backend verification (defaults are true; pinned here for audit trail).
+# roles/packages/files/mise-expected-verification.toml asserts each tool resolves
+# to its expected verification method, so a registry downgrade fails the audit.
+cosign = true
+slsa = true
+minisign = true
+github_attestations = true
+# renovate: datasource=github-releases depName=aquaproj/aqua-registry
+registry_url = "https://github.com/aquaproj/aqua-registry"
+
+[tools]
+# SHA256-verified tools (aqua-registry per-tool checksums.txt).
+kubectl = "1.36.2"
+kustomize = "5.8.1"
+kubeseal = "0.38.1"
+kubeconform = "0.8.0"
+act = "0.2.89"
+tekton-cli = "0.45.0"   # binary is `tkn`; mise registry key is tekton-cli
+rclone = "1.74.3"
+# minio client (binary `mc`); aqua-registry provides sha256. Date-tagged releases.
+"aqua:minio/mc" = "RELEASE.2025-08-13T08-35-41Z"
+# node — `core:node` records no per-platform checksum, so `locked = true` rejects
+# it; aqua's nodejs/node uses blake3 TOFU (better than an unverified curl | tar).
+"aqua:nodejs/node" = "26.3.1"
+
+# cosign-keyless-verified tools.
+flux2 = "2.8.8"   # binary is `flux`
+sops = "3.13.1"
+
+# SLSA-verified tools.
+argocd = "3.4.4"
+
+# GPG-verified tools. aqua's install path records only sha256 for helm + terraform
+# (no GPG step), so each postinstall hook re-runs the upstream trust-anchor flow
+# (fetch KEYS, assert pinned fingerprint, verify signature, confirm sha). The
+# audit ("postinstall-gpg") asserts the hook stays wired on future bumps.
+[tools.helm]
+version = "4.2.2"
+postinstall = "/etc/mise/aqua-registry/helm-postinstall.sh"
+
+[tools.terraform]
+version = "1.15.6"
+postinstall = "/etc/mise/aqua-registry/terraform-postinstall.sh"
+
+# Off-registry tools via mise's http backend. Not in aqua-registry; per-platform
+# URLs are provided directly and mise pins a blake3 TOFU checksum in mise.lock.
+# http-backend tools require the table form (dotted platform keys).
+
+# renovate: datasource=github-releases depName=kubevirt/kubevirt
+[tools."http:virtctl"]
+version = "1.8.2"
+
+[tools."http:virtctl".platforms]
+linux-x64 = { url = "https://github.com/kubevirt/kubevirt/releases/download/v{{ version }}/virtctl-v{{ version }}-linux-amd64" }
+linux-arm64 = { url = "https://github.com/kubevirt/kubevirt/releases/download/v{{ version }}/virtctl-v{{ version }}-linux-arm64" }
+
+# renovate: datasource=github-releases depName=cloud-bulldozer/kube-burner
+[tools."http:kube-burner"]
+version = "2.6.1"
+
+[tools."http:kube-burner".platforms]
+linux-x64 = { url = "https://github.com/cloud-bulldozer/kube-burner/releases/download/v{{ version }}/kube-burner-V{{ version }}-linux-x86_64.tar.gz", strip_components = 0 }
+linux-arm64 = { url = "https://github.com/cloud-bulldozer/kube-burner/releases/download/v{{ version }}/kube-burner-V{{ version }}-linux-arm64.tar.gz", strip_components = 0 }
+
+# renovate: datasource=github-releases depName=kube-burner/kube-burner-ocp
+[tools."http:kube-burner-ocp"]
+version = "1.11.11"
+
+[tools."http:kube-burner-ocp".platforms]
+linux-x64 = { url = "https://github.com/kube-burner/kube-burner-ocp/releases/download/v{{ version }}/kube-burner-ocp-V{{ version }}-linux-x86_64.tar.gz", strip_components = 0 }
+linux-arm64 = { url = "https://github.com/kube-burner/kube-burner-ocp/releases/download/v{{ version }}/kube-burner-ocp-V{{ version }}-linux-arm64.tar.gz", strip_components = 0 }
+
+# oc (OpenShift CLI) via http backend + Red Hat GPG postinstall re-verification.
+# renovate: datasource=custom.openshift-mirror depName=oc
+[tools."http:oc"]
+version = "4.21.16"
+postinstall = "/etc/mise/aqua-registry/oc-postinstall.sh"
+
+[tools."http:oc".platforms]
+linux-x64 = { url = "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ version }}/openshift-client-linux.tar.gz" }
+linux-arm64 = { url = "https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp/{{ version }}/openshift-client-linux.tar.gz" }

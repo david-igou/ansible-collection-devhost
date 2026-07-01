@@ -5,17 +5,14 @@
   become: false
 
   vars:
+    packages_install_cli_tools: true
     packages_install_onepassword: true
     packages_install_github_cli: true
     packages_install_claude_code: true
     packages_install_cursor_agent: true
-    packages_install_kubectl: true
-    packages_install_helm: true
-    packages_install_kustomize: true
-    packages_install_virtctl: true
     packages_install_extra_packages: true
-    packages_install_nodejs_pinned: true
     packages_install_pip_packages: true
+    packages_github_token: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
     host_prep_ssh_config: |
@@ -25,15 +22,15 @@
       # Test bashrc
       export EDITOR=vim
     host_prep_onepassword_service_account_token: "test-token-value"
-    host_prep_devcontainer_repository: "git@github.com:igou-io/igou-devenv.git"
+    host_prep_git_github_ssh_rewrite: false
+    host_prep_devcontainer_repository: "https://github.com/igou-io/igou-devenv.git"
 
     # The repositories to clone into the workspace, cloned to {{ ansible_facts.env.HOME }}/workspace/
     host_prep_workspace_repositories:
-      - "git@github.com:igou-io/igou-ansible.git"
-      - "git@github.com:igou-io/igou-openshift.git"
-      - "git@github.com:igou-io/igou-containers.git"
-      - "git@github.com:igou-io/igou-inventory.git"
-      - "git@github.com:igou-io/igou-infrastructure.git"
+      - "https://github.com/igou-io/igou-ansible.git"
+      - "https://github.com/igou-io/igou-openshift.git"
+      - "https://github.com/igou-io/igou-containers.git"
+      - "https://github.com/igou-io/igou-infrastructure.git"
 
 
   roles:

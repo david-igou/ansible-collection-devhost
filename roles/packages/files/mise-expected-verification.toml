@@ -1,0 +1,48 @@
+# What verification method we EXPECT each tool in mise.toml to use.
+# If aqua-registry silently downgrades any of these, test-mise-verification.sh fails.
+# Update intentionally when migrating a tool.
+#
+# Value semantics:
+#   "sha256"          — aqua-registry SHA256 (upstream checksums file)
+#   "blake3"          — TOFU on first install (mise computed the digest itself)
+#   "postinstall-gpg" — http/aqua backend baseline plus a postinstall hook that
+#                       re-verifies an upstream-signed checksum against a pinned
+#                       GPG key (helm/terraform/oc). Audit asserts the lockfile
+#                       entry exists AND mise.toml points to a postinstall script
+#                       that references `gpg`.
+#   "<alg>+<prov>"    — compound: checksum prefix must be <alg> AND the lockfile
+#                       must record a provenance.<prov> subsection per platform
+#                       (e.g. sha256+slsa for flux2/sops/argocd).
+#
+# Optional `# binary: <name>` trailing comment overrides the launch-check command
+# when the installed binary differs from the mise registry key.
+
+# SHA256-verified tools.
+kubectl = "sha256"
+kustomize = "sha256"
+kubeseal = "sha256"
+kubeconform = "sha256"
+act = "sha256"
+tekton-cli = "sha256"   # binary: tkn
+rclone = "sha256"
+"aqua:minio/mc" = "sha256"   # binary: mc
+# node — aqua-registry has no SHASUMS reference; mise pins blake3 TOFU.
+"aqua:nodejs/node" = "blake3"   # binary: node
+
+# SLSA-verified tools (aqua records per-asset sha256 AND a SLSA L3 attestation).
+flux2 = "sha256+slsa"   # binary: flux
+sops = "sha256+slsa"
+argocd = "sha256+slsa"
+
+# GPG-verified via postinstall hooks (aqua/http record only a checksum floor).
+#   helm:      BF888333D96A1C18E2682AAED79D67C9EC016739
+#   terraform: C874011F0AB405110D02105534365D9472D7468F
+#   oc:        567E347AD0044ADE55BA8A5F199E2F91FD431D51 (Red Hat key 2)
+helm = "postinstall-gpg"        # script: aqua-registry/helm-postinstall.sh
+terraform = "postinstall-gpg"   # script: aqua-registry/terraform-postinstall.sh
+
+# Off-registry http tools — blake3 TOFU pinned in mise.lock.
+"http:virtctl" = "blake3"          # binary: virtctl
+"http:kube-burner" = "blake3"      # binary: kube-burner
+"http:kube-burner-ocp" = "blake3"  # binary: kube-burner-ocp
+"http:oc" = "postinstall-gpg"      # binary: oc

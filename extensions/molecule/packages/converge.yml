@@ -5,13 +5,15 @@
   become: false
 
   vars:
+    packages_install_cli_tools: true
     packages_install_onepassword: true
     packages_install_github_cli: true
     packages_install_claude_code: true
     packages_install_cursor_agent: true
     packages_install_extra_packages: true
-    packages_install_nodejs_pinned: true
     packages_install_pip_packages: true
+    # mise install needs a GitHub token to avoid the anonymous API rate limit.
+    packages_github_token: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"
 
   roles:
     - role: david_igou.devhost.packages

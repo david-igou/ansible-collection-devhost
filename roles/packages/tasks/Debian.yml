@@ -11,13 +11,13 @@
     state: present
     update_cache: true
 
-- name: Install distro Node.js packages
+- name: Install distro Node.js packages (fallback when mise CLI tools are disabled)
   ansible.builtin.apt:
     name:
       - nodejs
       - npm
     state: present
-  when: not packages_install_nodejs_pinned
+  when: not packages_install_cli_tools
 
 - name: Add 1Password GPG key
   ansible.builtin.apt_key:

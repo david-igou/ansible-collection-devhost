@@ -29,7 +29,7 @@ The entry-point playbook (`playbooks/site.yml`) runs: `packages` -> `host_prep` 
 - **FQCNs**: Always use fully qualified collection names (`ansible.builtin.copy`, not `copy`).
 - **Multi-distro dispatch**: Per-distro task files named `Debian.yml` / `RedHat.yml`, included via `ansible_facts.os_family`.
 - **Become strategy**: No `become: true` at play level. Each task declares it individually.
-- **Version pinning**: Renovate manages versions via `# renovate:` annotations in role defaults.
+- **Version pinning**: Renovate manages versions via `# renovate:` annotations in role defaults. The `packages` role's CLI tools live in `roles/packages/files/mise.toml` (the single source of truth), managed by Renovate's native `mise` manager + a committed `mise.lock`. After a tool bump, regenerate the lock with `make mise-lock` (needs `GITHUB_TOKEN`) and commit `mise.toml` + `mise.lock` together.
 - **Booleans**: Use `true`/`false`, never `yes`/`no`.
 - **Strings**: Use double quotes for YAML strings; single quotes for Jinja2 expressions.
 
@@ -48,4 +48,5 @@ ansible-lint                                    # Lint
 ansible-playbook playbooks/site.yml --syntax-check  # Syntax check
 molecule test -s <scenario>                     # Molecule test
 make test                                       # Lint + molecule
+make mise-lock                                  # Regenerate packages mise.lock (needs GITHUB_TOKEN)
 ```

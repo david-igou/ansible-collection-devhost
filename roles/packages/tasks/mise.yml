@@ -1,0 +1,116 @@
+---
+# Install and version-pin CLI tools with mise, mirroring the igou-devenv
+# devcontainer pattern: GPG-pinned mise binary, a system-wide /etc/mise config
+# + committed lockfile, `mise install`, then symlink every tool binary into
+# /usr/local/bin so all users get them on PATH with no shell activation.
+
+- name: Map system architecture for mise
+  ansible.builtin.set_fact:
+    __packages_mise_arch: "{{ 'x64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+
+- name: Assemble the mise environment
+  ansible.builtin.set_fact:
+    __packages_mise_env:
+      MISE_DATA_DIR: "{{ packages_mise_data_dir }}"
+      MISE_GLOBAL_CONFIG_FILE: "{{ packages_mise_config_dir }}/mise.toml"
+      MISE_TRUSTED_CONFIG_PATHS: "{{ packages_mise_config_dir }}/mise.toml"
+      GITHUB_TOKEN: "{{ packages_github_token | default('', true) }}"
+
+- name: Ensure mise install prerequisites are present
+  ansible.builtin.package:
+    name: "{{ ['tar', 'gzip', 'curl'] + (['gnupg2'] if ansible_facts.os_family == 'RedHat' else ['gnupg']) }}"
+    state: present
+  become: true
+
+- name: Check installed mise version
+  ansible.builtin.command:
+    cmd: mise --version
+  register: __packages_mise_check
+  changed_when: false
+  failed_when: false
+
+- name: Install the mise binary (GPG-pinned tarball) # noqa: command-instead-of-module
+  ansible.builtin.shell:
+    executable: /usr/bin/bash
+    cmd: |
+      set -euo pipefail
+      ver="{{ packages_mise_version }}"
+      arch="{{ __packages_mise_arch }}"
+      tarball="mise-${ver}-linux-${arch}.tar.gz"
+      base="https://github.com/jdx/mise/releases/download/${ver}"
+      work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT; cd "$work"
+      export GNUPGHOME="${work}/gnupg"; mkdir -p -m 0700 "$GNUPGHOME"
+      curl -fsSL -o key.asc "{{ packages_mise_gpg_url }}"
+      gpg --batch --import key.asc
+      gpg --list-keys --with-colons --with-fingerprint \
+        | awk -F: '$1=="fpr"{print $10}' | grep -qFx "{{ packages_mise_gpg_fpr }}"
+      curl -fsSL -o "$tarball" "${base}/${tarball}"
+      curl -fsSL -o SHASUMS256.asc "${base}/SHASUMS256.asc"
+      gpg --batch --status-fd 1 --verify SHASUMS256.asc 2>/dev/null | grep -qF "VALIDSIG {{ packages_mise_gpg_fpr }}"
+      gpg --batch --decrypt SHASUMS256.asc 2>/dev/null | awk -v f="./${tarball}" '$2==f{print $1"  "f}' | sha256sum -c -
+      tar -xz --strip-components=2 -C /usr/local/bin -f "$tarball" mise/bin/mise
+      chmod +x /usr/local/bin/mise
+  become: true
+  changed_when: true
+  when: (packages_mise_version | regex_replace('^v', '')) not in (__packages_mise_check.stdout | default(''))
+
+- name: Ensure the mise config directory exists
+  ansible.builtin.file:
+    path: "{{ packages_mise_config_dir }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Deploy mise config, lockfile, and verification manifest
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ packages_mise_config_dir }}/{{ item }}"
+    mode: "0644"
+  loop:
+    - mise.toml
+    - mise.lock
+    - mise-expected-verification.toml
+  become: true
+
+- name: Deploy the mise verification audit script
+  ansible.builtin.copy:
+    src: test-mise-verification.sh
+    dest: "{{ packages_mise_config_dir }}/test-mise-verification.sh"
+    mode: "0755"
+  become: true
+
+- name: Deploy the aqua-registry GPG postinstall hooks
+  ansible.builtin.copy:
+    src: aqua-registry/
+    dest: "{{ packages_mise_config_dir }}/aqua-registry/"
+    mode: "0755"
+  become: true
+
+- name: Trust the mise config
+  ansible.builtin.command:
+    cmd: /usr/local/bin/mise trust "{{ packages_mise_config_dir }}/mise.toml"
+  environment: "{{ __packages_mise_env }}"
+  changed_when: false
+  become: true
+
+- name: Install the pinned CLI tools with mise
+  ansible.builtin.command:
+    cmd: /usr/local/bin/mise install --yes
+  environment: "{{ __packages_mise_env }}"
+  register: __packages_mise_install
+  changed_when: >-
+    ('installed' in __packages_mise_install.stdout)
+    or ('installed' in __packages_mise_install.stderr)
+  become: true
+
+- name: Symlink mise-managed binaries into /usr/local/bin # noqa: command-instead-of-shell
+  ansible.builtin.shell:
+    executable: /usr/bin/bash
+    cmd: |
+      set -euo pipefail
+      /usr/local/bin/mise bin-paths | while IFS= read -r d; do
+        find -L "$d" -maxdepth 1 -type f -executable -exec ln -sf {} /usr/local/bin/ \;
+      done
+  environment: "{{ __packages_mise_env }}"
+  changed_when: false
+  become: true

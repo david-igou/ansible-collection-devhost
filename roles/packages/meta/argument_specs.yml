@@ -3,12 +3,20 @@ argument_specs:
   main:
     short_description: Install system packages and CLI tools
     description:
-      - Installs core packages (git, jq, make, curl) via distro package manager.
+      - Installs core packages (git, jq, make, curl) via the distro package manager.
       - Configures optional third-party repositories (1Password, GitHub CLI).
-      - Installs pinned versions of kubectl, helm, kustomize, virtctl, and Node.js.
-      - Downloads and installs additional binary CLI tools for GitOps, infrastructure, and Kubernetes workflows.
-      - Installs pip packages and npm-based CLI tools.
+      - Installs and version-pins CLI tools (kubectl, helm, oc, ... and Node.js) via mise from files/mise.toml.
+      - Installs pip packages and the npm-based devcontainer CLI, and the Claude Code / Cursor agent CLIs.
     options:
+      packages_install_cli_tools:
+        type: bool
+        default: true
+        description: >-
+          Install and version-pin the CLI tool set (kubectl, helm, kustomize, virtctl,
+          argocd, flux, kubeseal, tkn, terraform, sops, oc, kubeconform, kube-burner,
+          kube-burner-ocp, act, mc, rclone, and Node.js) via mise, using
+          files/mise.toml as the source of truth. When false, a distro Node.js
+          package is installed as a fallback so the devcontainer CLI still works.
       packages_install_onepassword:
         type: bool
         default: true
@@ -29,104 +37,44 @@ argument_specs:
         default: true
         description: >-
           Install the Cursor agent CLI via the official install script.
-      packages_install_kubectl:
-        type: bool
-        default: true
-        description: >-
-          Install kubectl at the version specified by packages_kubectl_version.
-      packages_install_helm:
-        type: bool
-        default: true
-        description: >-
-          Install Helm at the version specified by packages_helm_version.
-      packages_install_kustomize:
-        type: bool
-        default: true
-        description: >-
-          Install kustomize at the version specified by packages_kustomize_version.
-      packages_install_virtctl:
-        type: bool
-        default: true
-        description: >-
-          Install virtctl at the version specified by packages_virtctl_version.
-      packages_install_argocd:
-        type: bool
-        default: true
-        description: >-
-          Install Argo CD CLI at the version specified by packages_argocd_version.
-      packages_install_flux:
-        type: bool
-        default: true
-        description: >-
-          Install Flux CLI at the version specified by packages_flux_version.
-      packages_install_kubeseal:
-        type: bool
-        default: true
-        description: >-
-          Install kubeseal at the version specified by packages_kubeseal_version.
-      packages_install_tkn:
-        type: bool
-        default: true
-        description: >-
-          Install Tekton CLI (tkn) at the version specified by packages_tkn_version.
-      packages_install_terraform:
-        type: bool
-        default: true
-        description: >-
-          Install Terraform at the version specified by packages_terraform_version.
-      packages_install_sops:
-        type: bool
-        default: true
-        description: >-
-          Install SOPS at the version specified by packages_sops_version.
-      packages_install_oc:
-        type: bool
-        default: true
-        description: >-
-          Install the OpenShift CLI (oc) from the OCP mirror.
-          Uses the channel or version specified by packages_oc_version.
-      packages_install_kubeconform:
-        type: bool
-        default: true
-        description: >-
-          Install kubeconform at the version specified by packages_kubeconform_version.
-      packages_install_kube_burner:
-        type: bool
-        default: true
-        description: >-
-          Install kube-burner at the version specified by packages_kube_burner_version.
-      packages_install_kube_burner_ocp:
-        type: bool
-        default: true
-        description: >-
-          Install kube-burner-ocp at the version specified by packages_kube_burner_ocp_version.
-      packages_install_act:
-        type: bool
-        default: true
-        description: >-
-          Install act (GitHub Actions local runner) at the version specified by packages_act_version.
-      packages_install_mc:
-        type: bool
-        default: true
-        description: >-
-          Install the MinIO Client (mc) from the official MinIO CDN.
-      packages_install_rclone:
-        type: bool
-        default: true
-        description: >-
-          Install rclone at the version specified by packages_rclone_version.
       packages_install_extra_packages:
         type: bool
         default: true
         description: >-
           Install the distro-specific extra package list.
-      packages_install_nodejs_pinned:
-        type: bool
-        default: true
-        description: >-
-          Install Node.js at the pinned version instead of the distro package.
       packages_install_pip_packages:
         type: bool
         default: true
         description: >-
           Install the pip packages listed in packages_pip_packages.
+      packages_mise_version:
+        type: str
+        default: "v2026.6.11"
+        description: >-
+          Version of the mise binary to install (from a GPG-pinned tarball).
+      packages_mise_gpg_fpr:
+        type: str
+        default: "24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
+        description: >-
+          Pinned GPG fingerprint used to verify the mise release tarball.
+      packages_mise_gpg_url:
+        type: str
+        default: "https://mise.jdx.dev/gpg-key.pub"
+        description: >-
+          URL of the mise release signing key.
+      packages_mise_config_dir:
+        type: str
+        default: /etc/mise
+        description: >-
+          Directory the mise config, lockfile, and postinstall hooks are deployed to.
+      packages_mise_data_dir:
+        type: str
+        default: /opt/mise
+        description: >-
+          Directory mise installs tool data into (MISE_DATA_DIR).
+      packages_github_token:
+        type: str
+        required: false
+        description: >-
+          GitHub token used by `mise install` to raise the GitHub API rate limit.
+          Defaults to the GITHUB_TOKEN environment variable.
