@@ -28,6 +28,10 @@
       - kind
       - direnv
       - age
+      - kubeseal
+      - kube-burner-ocp
+      - tkn-pac
+      - code-server
       - git
       - jq
       - make
@@ -50,20 +54,25 @@
       loop_control:
         label: "{{ item }}"
 
-    - name: Check the ~/.local/bin agent CLIs are installed
-      ansible.builtin.stat:
-        path: "{{ ansible_facts.env.HOME }}/.local/bin/{{ item }}"
+    - name: Check the ~/.local/bin agent CLIs report a version
+      ansible.builtin.command:
+        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/{{ item }} --version"
       register: _local_cli
+      changed_when: false
+      failed_when: false
       loop:
         - devcontainer
         - claude
         - agent
+      loop_control:
+        label: "{{ item }}"
 
-    - name: Assert every ~/.local/bin CLI exists
+    - name: Assert every ~/.local/bin CLI returned a version
       ansible.builtin.assert:
         that:
-          - item.stat.exists
-        fail_msg: "{{ item.item }} not found in ~/.local/bin"
+          - item.rc == 0
+          - item.stdout | length > 0
+        fail_msg: "{{ item.item }} did not return a version"
       loop: "{{ _local_cli.results }}"
       loop_control:
         label: "{{ item.item }}"

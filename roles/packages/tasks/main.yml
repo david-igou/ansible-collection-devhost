@@ -6,8 +6,8 @@
       ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
 
 # CLI binaries (kubectl, helm, oc, ... + Node.js) are installed and version-pinned
-# by mise from files/mise.toml. This is distro-agnostic — the same binaries on
-# Debian and RedHat — so it replaces the previous per-tool get_url/unarchive tasks.
+# by mise from igou-devenv's fetched mise.toml. This is distro-agnostic — the same
+# binaries on Debian and RedHat — so it replaces the per-tool get_url/unarchive tasks.
 - name: Install CLI tools via mise
   ansible.builtin.include_tasks: mise.yml
   when: packages_install_cli_tools | bool

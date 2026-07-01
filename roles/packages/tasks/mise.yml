@@ -15,8 +15,6 @@
       MISE_DATA_DIR: "{{ packages_mise_data_dir }}"
       MISE_GLOBAL_CONFIG_FILE: "{{ packages_mise_config_dir }}/mise.toml"
       MISE_TRUSTED_CONFIG_PATHS: "{{ packages_mise_config_dir }}/mise.toml"
-      GITHUB_TOKEN: "{{ packages_github_token | default('', true) }}"
-  no_log: true  # the dict carries GITHUB_TOKEN
 
 - name: Ensure mise install prerequisites are present
   ansible.builtin.package:
@@ -71,6 +69,7 @@
     url: "{{ packages_mise_source_base }}/{{ item }}"
     dest: "{{ packages_mise_config_dir }}/{{ item }}"
     mode: "0644"
+    force: true  # re-fetch every run so a packages_mise_source_ref bump actually lands
   loop:
     - mise.toml
     - mise.lock
@@ -81,6 +80,7 @@
     url: "{{ packages_mise_source_base }}/aqua-registry/{{ item }}"
     dest: "{{ packages_mise_config_dir }}/aqua-registry/{{ item }}"
     mode: "0755"
+    force: true  # re-fetch every run so a packages_mise_source_ref bump actually lands
   loop:
     - helm-postinstall.sh
     - terraform-postinstall.sh
@@ -97,11 +97,12 @@
 - name: Install the pinned CLI tools with mise
   ansible.builtin.command:
     cmd: /usr/local/bin/mise install --yes
-  environment: "{{ __packages_mise_env }}"
+  environment: "{{ __packages_mise_env | combine({'GITHUB_TOKEN': packages_github_token | default('', true)}) }}"
   register: __packages_mise_install
   changed_when: >-
-    ('installed' in __packages_mise_install.stdout)
-    or ('installed' in __packages_mise_install.stderr)
+    ('installing' in __packages_mise_install.stdout)
+    or ('installing' in __packages_mise_install.stderr)
+  no_log: true  # environment carries GITHUB_TOKEN
   become: true
 
 - name: Symlink mise-managed binaries into /usr/local/bin # noqa: command-instead-of-shell -- pipe + per-binary symlink loop needs the shell
@@ -113,5 +114,5 @@
         find -L "$d" -maxdepth 1 -type f -executable -exec ln -sf {} /usr/local/bin/ \;
       done
   environment: "{{ __packages_mise_env }}"
-  changed_when: false
+  changed_when: false  # ln -sf is idempotent; symlink creation isn't tracked for change reporting
   become: true

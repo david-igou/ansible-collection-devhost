@@ -22,9 +22,10 @@ packages_mise_gpg_url: "https://mise.jdx.dev/gpg-key.pub"
 packages_mise_config_dir: /etc/mise
 packages_mise_data_dir: /opt/mise
 # Source of the fetched mise.toml/mise.lock/aqua-registry hooks. Pinned to an
-# igou-devenv tag for reproducibility; bump deliberately to advance the toolset.
+# immutable igou-devenv commit SHA (the commit of tag v2026.06.29) so a moved tag
+# cannot change what is fetched + run as root; bump deliberately to advance the toolset.
 packages_mise_source_repo: "igou-io/igou-devenv"
-packages_mise_source_ref: "v2026.06.29"
+packages_mise_source_ref: "7cbfb83e54cb0735c17d880237003971365e0ecf"
 packages_mise_source_base: "https://raw.githubusercontent.com/{{ packages_mise_source_repo }}/{{ packages_mise_source_ref }}"
 # GitHub token for `mise install` — raises the anonymous 60/hr GitHub API limit
 # to 5000/hr (a full install of the pinned tool set will otherwise rate-limit).

@@ -24,6 +24,8 @@ jobs:
     uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
   molecule:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # only needs to read the repo; GITHUB_TOKEN is for release-API rate limits
     strategy:
       fail-fast: false
       matrix:
