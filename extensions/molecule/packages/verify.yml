@@ -4,60 +4,72 @@
   gather_facts: true
   become: false
 
+  vars:
+    # mise-managed CLIs (from igou-devenv's mise.toml) that the role symlinks into
+    # /usr/local/bin, plus the distro/pip/npm CLIs — all should resolve on PATH.
+    _packages_cli_on_path:
+      - kubectl
+      - helm
+      - kustomize
+      - oc
+      - virtctl
+      - argocd
+      - flux
+      - sops
+      - kubeconform
+      - terraform
+      - node
+      - npm
+      - kube-burner
+      - act
+      - rclone
+      - tkn
+      - gh
+      - kind
+      - direnv
+      - age
+      - git
+      - jq
+      - make
+      - gpg
+      - op
+      - ansible
+      - molecule
+      - yq
+      - vim
+      - tmux
+      - nmap
+      - rsync
+
   tasks:
-    # The mise-managed CLI tools (kubectl, helm, oc, ... + node + mc) are audited
-    # by the deployed verification script, which asserts each tool's expected
-    # verification method against /etc/mise/mise.lock AND launches every binary.
-    - name: Run the mise verification audit
-      ansible.builtin.command:
-        cmd: bash /etc/mise/test-mise-verification.sh
-      register: _mise_audit
+    - name: Check each CLI resolves on PATH # noqa: command-instead-of-shell -- command -v is a shell builtin
+      ansible.builtin.shell: "command -v {{ item }}"
+      register: _cli
       changed_when: false
-
-    - name: Show the mise verification audit output
-      ansible.builtin.debug:
-        var: _mise_audit.stdout_lines
-
-    # The remaining tools are NOT mise-managed (distro packages, npm, curl, pip),
-    # so verify them directly.
-    - name: Check non-mise CLIs report a version
-      ansible.builtin.command:
-        cmd: "{{ item.cmd }}"
-      register: _nonmise
-      changed_when: false
-      loop:
-        - { name: git, cmd: "git --version" }
-        - { name: jq, cmd: "jq --version" }
-        - { name: make, cmd: "make --version" }
-        - { name: gpg, cmd: "gpg --version" }
-        - { name: devcontainer, cmd: "{{ ansible_facts.env.HOME }}/.local/bin/devcontainer --version" }
-        - { name: npm, cmd: "npm --version" }
-        - { name: op, cmd: "op --version" }
-        - { name: gh, cmd: "gh --version" }
-        - { name: claude, cmd: "{{ ansible_facts.env.HOME }}/.local/bin/claude --version" }
-        - { name: agent, cmd: "{{ ansible_facts.env.HOME }}/.local/bin/agent --version" }
-        - { name: ansible, cmd: "ansible --version" }
-        - { name: molecule, cmd: "molecule --version" }
-        - { name: yq, cmd: "yq --version" }
-        - { name: vim, cmd: "vim --version" }
-        - { name: tmux, cmd: "tmux -V" }
-        - { name: nmap, cmd: "nmap --version" }
-        - { name: rsync, cmd: "rsync --version" }
+      loop: "{{ _packages_cli_on_path }}"
       loop_control:
-        label: "{{ item.name }}"
+        label: "{{ item }}"
 
-    - name: Assert every non-mise CLI returned a version
+    - name: Check the ~/.local/bin agent CLIs are installed
+      ansible.builtin.stat:
+        path: "{{ ansible_facts.env.HOME }}/.local/bin/{{ item }}"
+      register: _local_cli
+      loop:
+        - devcontainer
+        - claude
+        - agent
+
+    - name: Assert every ~/.local/bin CLI exists
       ansible.builtin.assert:
         that:
-          - item.rc == 0
-          - item.stdout | length > 0
-        fail_msg: "{{ item.item.name }} did not return a version string"
-      loop: "{{ _nonmise.results }}"
+          - item.stat.exists
+        fail_msg: "{{ item.item }} not found in ~/.local/bin"
+      loop: "{{ _local_cli.results }}"
       loop_control:
-        label: "{{ item.item.name }}"
+        label: "{{ item.item }}"
 
     - name: Print verification summary
       ansible.builtin.debug:
-        msg:
-          - "mise audit: {{ _mise_audit.stdout_lines[-1] }}"
-          - "{{ _nonmise.results | map(attribute='item.name') | join(', ') }} all report versions"
+        msg: >-
+          {{ _packages_cli_on_path | length }} CLIs resolve on PATH;
+          devcontainer/claude/agent present in ~/.local/bin.

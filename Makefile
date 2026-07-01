@@ -5,7 +5,7 @@ COLLECTION := $(COLLECTION_NAMESPACE).$(COLLECTION_NAME)
 MOLECULE_SCENARIOS := default host_prep packages podman docker container_runtimes
 PROVISIONER ?= podman
 
-.PHONY: help lint molecule molecule-kubevirt test mise-lock collection-build collection-install galaxy-import clean
+.PHONY: help lint molecule molecule-kubevirt test collection-build collection-install galaxy-import clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -21,9 +21,6 @@ molecule-kubevirt: ## Run molecule test against kubevirt (SCENARIO=default)
 	PROVISIONER=kubevirt molecule test -s $(or $(SCENARIO),default)
 
 test: lint molecule ## Run lint then molecule
-
-mise-lock: ## Regenerate roles/packages/files/mise.lock (pinned stream10 container; needs GITHUB_TOKEN)
-	bin/regenerate-mise-lock.sh
 
 collection-build: ## Build the collection tarball
 	ansible-galaxy collection build --force

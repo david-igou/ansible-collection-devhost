@@ -1,8 +1,8 @@
 ---
 # Feature toggles
 # CLI binaries (kubectl, helm, oc, ... + Node.js) installed + version-pinned by
-# mise from files/mise.toml. Disable to skip mise entirely (a distro-node
-# fallback then covers @devcontainers/cli).
+# mise using igou-devenv's mise.toml/mise.lock as the source of truth. Disable to
+# skip mise entirely (a distro-node fallback then covers @devcontainers/cli).
 packages_install_cli_tools: true
 packages_install_onepassword: true
 packages_install_github_cli: true
@@ -11,15 +11,21 @@ packages_install_cursor_agent: true
 packages_install_extra_packages: true
 packages_install_pip_packages: true
 
-# mise — installs and version-pins the CLI tools (see files/mise.toml, which is
-# the single source of truth; Renovate manages tool versions via its native mise
-# manager). The mise binary itself is installed from a GPG-pinned tarball.
+# mise — installs and version-pins the CLI tools. The tool set (mise.toml + the
+# committed mise.lock + the aqua-registry GPG hooks) is fetched from the
+# igou-devenv repo, which is the single source of truth — bump tool versions
+# there. The mise binary itself is installed from a GPG-pinned tarball.
 # renovate: datasource=github-releases depName=jdx/mise
 packages_mise_version: "v2026.6.11"
 packages_mise_gpg_fpr: "24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
 packages_mise_gpg_url: "https://mise.jdx.dev/gpg-key.pub"
 packages_mise_config_dir: /etc/mise
 packages_mise_data_dir: /opt/mise
+# Source of the fetched mise.toml/mise.lock/aqua-registry hooks. Pinned to an
+# igou-devenv tag for reproducibility; bump deliberately to advance the toolset.
+packages_mise_source_repo: "igou-io/igou-devenv"
+packages_mise_source_ref: "v2026.06.29"
+packages_mise_source_base: "https://raw.githubusercontent.com/{{ packages_mise_source_repo }}/{{ packages_mise_source_ref }}"
 # GitHub token for `mise install` — raises the anonymous 60/hr GitHub API limit
 # to 5000/hr (a full install of the pinned tool set will otherwise rate-limit).
 packages_github_token: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"

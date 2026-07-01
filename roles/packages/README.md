@@ -7,7 +7,7 @@ Uses `become: true` for system packages, dispatches per-distro tasks via `ansibl
 ## What it does
 
 - Installs distro-specific system packages (Debian.yml / RedHat.yml) + a configurable extra package list.
-- Installs and **version-pins CLI tools via mise** from `files/mise.toml` (kubectl, helm, kustomize, virtctl, argocd, flux, kubeseal, tkn, terraform, sops, oc, kubeconform, kube-burner, kube-burner-ocp, act, mc, rclone, and Node.js). The mise binary is installed from a GPG-pinned tarball; tools are verified per `files/mise.lock` (SHA256/blake3), SLSA/attestations, and GPG postinstall hooks for helm/terraform/oc; then symlinked into `/usr/local/bin`.
+- Installs and **version-pins CLI tools via mise**, using **[igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** as the source of truth (fetched at `packages_mise_source_ref`): kubectl, helm, kustomize, virtctl, argocd, flux, kubeseal, tkn, terraform, sops, oc, kubeconform, kube-burner, kube-burner-ocp, act, rclone, gh, kind, direnv, age, code-server, and Node.js. The mise binary is installed from a GPG-pinned tarball; tools are verified per the fetched `mise.lock` (SHA256/blake3), SLSA/attestations, and GPG postinstall hooks for helm/terraform/oc; then symlinked into `/usr/local/bin`.
 - Installs pip packages (ansible-core, ansible-navigator, molecule, etc.).
 - Installs the devcontainer CLI via npm (uses Node.js from mise).
 - Optionally installs Claude Code, Cursor agent CLI, GitHub CLI, and 1Password.
@@ -18,7 +18,7 @@ Uses `become: true` for system packages, dispatches per-distro tasks via `ansibl
 
 | Variable | Default | Description |
 |---|---|---|
-| `packages_install_cli_tools` | `true` | Install + version-pin the CLI tool set (and Node.js) via mise from `files/mise.toml`. When false, a distro Node.js package is installed as a fallback so the devcontainer CLI still works |
+| `packages_install_cli_tools` | `true` | Install + version-pin the CLI tool set (and Node.js) via mise using igou-devenv's `mise.toml`/`mise.lock`. When false, a distro Node.js package is installed as a fallback so the devcontainer CLI still works |
 | `packages_install_onepassword` | `true` | Install 1Password CLI (distro repo) |
 | `packages_install_github_cli` | `true` | Install GitHub CLI (distro repo) |
 | `packages_install_claude_code` | `true` | Install Claude Code |
@@ -33,11 +33,13 @@ Uses `become: true` for system packages, dispatches per-distro tasks via `ansibl
 | `packages_mise_version` | `"v2026.6.11"` | mise binary version (GPG-pinned tarball; Renovate-managed) |
 | `packages_mise_gpg_fpr` | `24853EC9…A06D` | Pinned GPG fingerprint for the mise tarball |
 | `packages_mise_gpg_url` | `https://mise.jdx.dev/gpg-key.pub` | mise signing key URL |
-| `packages_mise_config_dir` | `/etc/mise` | Where `mise.toml`, `mise.lock`, and the postinstall hooks are deployed |
+| `packages_mise_config_dir` | `/etc/mise` | Where the fetched `mise.toml`, `mise.lock`, and postinstall hooks are deployed |
 | `packages_mise_data_dir` | `/opt/mise` | mise tool data dir (`MISE_DATA_DIR`) |
+| `packages_mise_source_repo` | `igou-io/igou-devenv` | Repo providing the `mise.toml`/`mise.lock`/hooks source of truth |
+| `packages_mise_source_ref` | `v2026.06.29` | igou-devenv git ref (tag/branch/SHA) to fetch; bump to advance the toolset |
 | `packages_github_token` | env `GITHUB_TOKEN` | Token for `mise install` (raises the GitHub API rate limit; strongly recommended) |
 
-> **CLI tool versions live in `files/mise.toml`** (the single source of truth), not in role vars. Renovate bumps them via its native `mise` manager. After a bump, regenerate the lock with `make mise-lock` and commit `files/mise.toml` + `files/mise.lock` together. `files/mise-expected-verification.toml` + `files/test-mise-verification.sh` audit that each tool keeps its expected verification method.
+> **The CLI tool set + versions live in [igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** (the single source of truth), fetched at `packages_mise_source_ref`. Bump tool versions there — igou-devenv owns the `mise.lock` regeneration and the verification audit — and move the `packages_mise_source_ref` pin to a newer igou-devenv tag to advance the host toolset. `gh` is part of that set, so `packages_install_github_cli` is redundant while `cli_tools` is enabled.
 
 ### Other pins & lists
 

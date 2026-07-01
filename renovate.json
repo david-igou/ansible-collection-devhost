@@ -27,11 +27,6 @@
       "groupName": "cli tools"
     },
     {
-      "matchManagers": ["mise"],
-      "groupName": "mise-managed cli tools",
-      "description": "CLI tools pinned in roles/packages/files/mise.toml. Regenerate mise.lock (make mise-lock) after a bump."
-    },
-    {
       "matchManagers": ["github-actions"],
       "groupName": "github actions"
     },
@@ -40,15 +35,6 @@
       "groupName": "npm dependencies"
     }
   ],
-  "customDatasources": {
-    "openshift-mirror": {
-      "defaultRegistryUrlTemplate": "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.21/release.txt",
-      "format": "plain",
-      "transformTemplates": [
-        "{ \"releases\": [ { \"version\": $match($, /^Version:\\s+(\\S+)/).groups[0] } ] }"
-      ]
-    }
-  },
   "customManagers": [
     {
       "description": "Update pinned versions in Ansible defaults",

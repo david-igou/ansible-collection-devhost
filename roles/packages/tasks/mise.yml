@@ -1,8 +1,9 @@
 ---
-# Install and version-pin CLI tools with mise, mirroring the igou-devenv
-# devcontainer pattern: GPG-pinned mise binary, a system-wide /etc/mise config
-# + committed lockfile, `mise install`, then symlink every tool binary into
-# /usr/local/bin so all users get them on PATH with no shell activation.
+# Install and version-pin CLI tools with mise, using igou-devenv's mise.toml +
+# mise.lock as the single source of truth (fetched from the igou-devenv repo at
+# packages_mise_source_ref). GPG-pinned mise binary, system-wide /etc/mise config,
+# `mise install`, then symlink every tool binary into /usr/local/bin (no shell
+# activation). Versions are bumped in igou-devenv, not duplicated here.
 
 - name: Map system architecture for mise
   ansible.builtin.set_fact:
@@ -15,6 +16,7 @@
       MISE_GLOBAL_CONFIG_FILE: "{{ packages_mise_config_dir }}/mise.toml"
       MISE_TRUSTED_CONFIG_PATHS: "{{ packages_mise_config_dir }}/mise.toml"
       GITHUB_TOKEN: "{{ packages_github_token | default('', true) }}"
+  no_log: true  # the dict carries GITHUB_TOKEN
 
 - name: Ensure mise install prerequisites are present
   ansible.builtin.package:
@@ -29,7 +31,7 @@
   changed_when: false
   failed_when: false
 
-- name: Install the mise binary (GPG-pinned tarball) # noqa: command-instead-of-module
+- name: Install the mise binary (GPG-pinned tarball) # noqa: command-instead-of-module -- GPG verify pipeline
   ansible.builtin.shell:
     executable: /usr/bin/bash
     cmd: |
@@ -54,36 +56,35 @@
   changed_when: true
   when: (packages_mise_version | regex_replace('^v', '')) not in (__packages_mise_check.stdout | default(''))
 
-- name: Ensure the mise config directory exists
+- name: Ensure the mise config + hook directories exist
   ansible.builtin.file:
-    path: "{{ packages_mise_config_dir }}"
+    path: "{{ item }}"
     state: directory
     mode: "0755"
+  loop:
+    - "{{ packages_mise_config_dir }}"
+    - "{{ packages_mise_config_dir }}/aqua-registry"
   become: true
 
-- name: Deploy mise config, lockfile, and verification manifest
-  ansible.builtin.copy:
-    src: "{{ item }}"
+- name: Fetch igou-devenv mise.toml + mise.lock (single source of truth)
+  ansible.builtin.get_url:
+    url: "{{ packages_mise_source_base }}/{{ item }}"
     dest: "{{ packages_mise_config_dir }}/{{ item }}"
     mode: "0644"
   loop:
     - mise.toml
     - mise.lock
-    - mise-expected-verification.toml
   become: true
 
-- name: Deploy the mise verification audit script
-  ansible.builtin.copy:
-    src: test-mise-verification.sh
-    dest: "{{ packages_mise_config_dir }}/test-mise-verification.sh"
+- name: Fetch igou-devenv aqua-registry GPG postinstall hooks
+  ansible.builtin.get_url:
+    url: "{{ packages_mise_source_base }}/aqua-registry/{{ item }}"
+    dest: "{{ packages_mise_config_dir }}/aqua-registry/{{ item }}"
     mode: "0755"
-  become: true
-
-- name: Deploy the aqua-registry GPG postinstall hooks
-  ansible.builtin.copy:
-    src: aqua-registry/
-    dest: "{{ packages_mise_config_dir }}/aqua-registry/"
-    mode: "0755"
+  loop:
+    - helm-postinstall.sh
+    - terraform-postinstall.sh
+    - oc-postinstall.sh
   become: true
 
 - name: Trust the mise config
@@ -103,7 +104,7 @@
     or ('installed' in __packages_mise_install.stderr)
   become: true
 
-- name: Symlink mise-managed binaries into /usr/local/bin # noqa: command-instead-of-shell
+- name: Symlink mise-managed binaries into /usr/local/bin # noqa: command-instead-of-shell -- pipe + per-binary symlink loop needs the shell
   ansible.builtin.shell:
     executable: /usr/bin/bash
     cmd: |

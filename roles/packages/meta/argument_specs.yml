@@ -72,9 +72,51 @@ argument_specs:
         default: /opt/mise
         description: >-
           Directory mise installs tool data into (MISE_DATA_DIR).
+      packages_mise_source_repo:
+        type: str
+        default: "igou-io/igou-devenv"
+        description: >-
+          GitHub repo providing the mise.toml/mise.lock/aqua-registry source of truth.
+      packages_mise_source_ref:
+        type: str
+        default: "v2026.06.29"
+        description: >-
+          Git ref (tag/branch/SHA) of packages_mise_source_repo to fetch the mise config + lock from.
+      packages_mise_source_base:
+        type: str
+        description: >-
+          Raw base URL the mise.toml/mise.lock/hooks are fetched from (derived from
+          packages_mise_source_repo + packages_mise_source_ref).
       packages_github_token:
         type: str
         required: false
+        default: ""
+        no_log: true
         description: >-
           GitHub token used by `mise install` to raise the GitHub API rate limit.
           Defaults to the GITHUB_TOKEN environment variable.
+      packages_devcontainer_cli_version:
+        type: str
+        default: "0.85.0"
+        description: >-
+          Version of the @devcontainers/cli npm package to install.
+      packages_pip_packages:
+        type: list
+        elements: str
+        description: >-
+          Pip packages (with pinned versions) to install.
+      packages_pip_requirements:
+        type: str
+        default: ""
+        description: >-
+          Path or URL to a pip requirements file (skipped when empty).
+      packages_extra_packages_debian:
+        type: list
+        elements: str
+        description: >-
+          Extra apt packages to install on Debian/Ubuntu.
+      packages_extra_packages_redhat:
+        type: list
+        elements: str
+        description: >-
+          Extra dnf packages to install on RHEL/CentOS.
