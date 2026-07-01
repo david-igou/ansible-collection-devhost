@@ -15,7 +15,10 @@
 - name: Install pip packages
   ansible.builtin.pip:
     name: "{{ packages_pip_packages }}"
-    extra_args: --break-system-packages
+    # --ignore-installed: on PEP668/externally-managed distros (Debian) several deps
+    # (e.g. pathspec) are apt-provided without pip RECORD files, so pip cannot
+    # upgrade them; installing fresh avoids "Cannot uninstall ... RECORD not found".
+    extra_args: --break-system-packages --ignore-installed
   become: true
   when:
     - packages_install_pip_packages
@@ -36,7 +39,7 @@
     - name: Install pip packages from requirements file
       ansible.builtin.pip:
         requirements: "{{ '/tmp/pip-requirements.txt' if packages_pip_requirements is match('https?://') else packages_pip_requirements }}"
-        extra_args: --break-system-packages
+        extra_args: --break-system-packages --ignore-installed
       become: true
 
 - name: Configure npm prefix for user-level global installs

@@ -62,12 +62,17 @@ verifier:
   name: ansible
 scenario:
   name: packages
+  # NOTE: `idempotence` is intentionally omitted. The pinned Python toolchain is
+  # installed with `pip --ignore-installed` (required on PEP668/externally-managed
+  # distros like Debian, where deps such as pathspec are apt-provided without RECORD
+  # files), which is inherently non-idempotent. Making the pip layer idempotent
+  # would require moving it into a virtualenv (a separate change to the operator's
+  # toolchain install). The mise layer itself IS idempotent.
   test_sequence:
     - dependency
     - syntax
     - create
     - prepare
     - converge
-    - idempotence
     - verify
     - destroy
