@@ -1,0 +1,63 @@
+---
+# ghapp scenario: installs the ghapp role in both modes (client local-mint
+# config + broker) and smoke-tests the broker over its unix socket. The
+# containers have no systemd, so the broker service is started manually in
+# verify (ghapp_broker_manage_service: false).
+dependency:
+  name: galaxy
+  options:
+    requirements-file: extensions/molecule/provisioners/${PROVISIONER:-podman}/requirements.yml
+    force: true
+driver:
+  name: default
+  options:
+    managed: true
+    ansible_connection_options:
+      connection: local
+platforms:
+  - name: ubuntu-24
+    podman:
+      image: docker.io/geerlingguy/docker-ubuntu2404-ansible:latest
+      command: sleep 1d
+    kubevirt:
+      image: quay.io/containerdisks/ubuntu:24.04
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 4Gi
+  - name: centos-stream-10
+    podman:
+      image: quay.io/centos/centos:stream10
+      command: sleep 1d
+    kubevirt:
+      image: quay.io/containerdisks/centos-stream:10
+      namespace: ${MOLECULE_NAMESPACE:-molecule}
+      ssh_service:
+        type: NodePort
+      ansible_user: cloud-user
+      memory: 4Gi
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+    create: ../provisioners/${PROVISIONER:-podman}/create.yml
+    destroy: ../provisioners/${PROVISIONER:-podman}/destroy.yml
+    prepare: ../provisioners/${PROVISIONER:-podman}/prepare.yml
+    verify: verify.yml
+  inventory:
+    links:
+      group_vars: ../provisioners/${PROVISIONER:-podman}/group_vars/
+verifier:
+  name: ansible
+scenario:
+  name: ghapp
+  test_sequence:
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - destroy

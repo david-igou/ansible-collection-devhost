@@ -1,0 +1,43 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  become: false
+
+  vars:
+    __molecule_fake_pem: |
+      -----BEGIN RSA PRIVATE KEY-----
+      bW9sZWN1bGUtZmFrZS1rZXktbm90LWEtcmVhbC1rZXk=
+      -----END RSA PRIVATE KEY-----
+    ghapp_client_enabled: true
+    ghapp_client_user: root
+    ghapp_client_id: "Iv23moleculeclient"
+    ghapp_client_app_slug: molecule-test
+    ghapp_client_installations:
+      exampleorg: "111"
+      exampleuser: "222"
+    ghapp_client_private_key_content: "{{ __molecule_fake_pem }}"
+    ghapp_broker_enabled: true
+    ghapp_broker_manage_service: false
+    ghapp_broker_client_id: "Iv23moleculebroker"
+    ghapp_broker_app_slug: molecule-broker
+    ghapp_broker_installations:
+      exampleorg: "111"
+    ghapp_broker_private_key_content: "{{ __molecule_fake_pem }}"
+    ghapp_broker_policy:
+      allowed_repos:
+        - exampleorg/allowed-repo
+      max_permissions:
+        contents: write
+      default_permissions:
+        contents: read
+
+  roles:
+    - role: david_igou.devhost.ghapp
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      become: true
+      when: ansible_facts.os_family == "Debian"

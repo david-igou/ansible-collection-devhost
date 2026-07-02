@@ -1,0 +1,103 @@
+---
+- name: Assert the broker configuration is complete
+  ansible.builtin.assert:
+    that:
+      - ghapp_broker_client_id | length > 0
+      - ghapp_broker_installations | length > 0
+      - ghapp_broker_private_key_content | length > 0
+      - ghapp_broker_policy.allowed_repos | length > 0
+    fail_msg: >-
+      ghapp broker mode needs ghapp_broker_client_id, ghapp_broker_installations,
+      ghapp_broker_private_key_content, and a non-empty
+      ghapp_broker_policy.allowed_repos list.
+
+- name: Create the broker group
+  ansible.builtin.group:
+    name: "{{ ghapp_broker_group }}"
+    system: true
+    state: present
+  become: true
+
+- name: Create the socket-access group
+  ansible.builtin.group:
+    name: "{{ ghapp_broker_socket_group }}"
+    system: false
+    state: present
+  become: true
+  when: ghapp_broker_socket_group != ghapp_broker_group
+
+- name: Create the broker system user
+  ansible.builtin.user:
+    name: "{{ ghapp_broker_user }}"
+    group: "{{ ghapp_broker_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+  become: true
+
+- name: Create the broker config directory
+  ansible.builtin.file:
+    path: "{{ ghapp_broker_config_dir }}"
+    state: directory
+    owner: root
+    group: "{{ ghapp_broker_group }}"
+    mode: "0750"
+  become: true
+
+- name: Write the broker private key
+  ansible.builtin.copy:
+    content: "{{ ghapp_broker_private_key_content }}"
+    dest: "{{ ghapp_broker_config_dir }}/key.pem"
+    owner: "{{ ghapp_broker_user }}"
+    group: "{{ ghapp_broker_group }}"
+    mode: "0600"
+  become: true
+  no_log: true
+  notify: Restart the ghapp broker
+
+- name: Render the broker ghapp config
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ ghapp_broker_config_dir }}/config.yaml"
+    owner: root
+    group: "{{ ghapp_broker_group }}"
+    mode: "0640"
+  become: true
+  vars:
+    __ghapp_config_client_id: "{{ ghapp_broker_client_id }}"
+    __ghapp_config_app_slug: "{{ ghapp_broker_app_slug }}"
+    __ghapp_config_installations: "{{ ghapp_broker_installations }}"
+    __ghapp_config_private_key_cmd: ""
+    __ghapp_config_private_key_path: "{{ ghapp_broker_config_dir }}/key.pem"
+    __ghapp_config_default_permissions: {}
+  notify: Restart the ghapp broker
+
+- name: Render the broker policy (deny-not-clamp; root-owned, agent-immutable)
+  ansible.builtin.template:
+    src: policy.yaml.j2
+    dest: "{{ ghapp_broker_config_dir }}/policy.yaml"
+    owner: root
+    group: "{{ ghapp_broker_group }}"
+    mode: "0640"
+  become: true
+  notify: Restart the ghapp broker
+
+- name: Render the broker systemd unit
+  ansible.builtin.template:
+    src: ghapp-broker.service.j2
+    dest: "/etc/systemd/system/{{ ghapp_broker_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart the ghapp broker
+
+- name: Enable and start the broker service
+  ansible.builtin.systemd:
+    name: "{{ ghapp_broker_service_name }}.service"
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true
+  when: ghapp_broker_manage_service | bool

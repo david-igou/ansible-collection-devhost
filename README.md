@@ -28,6 +28,7 @@ Ansible collection that provisions a bare Linux host for VS Code/Cursor remote-s
 | [`packages`](roles/packages/) | System packages, third-party repos, versioned CLI binaries, pip packages, devcontainer CLI |
 | [`podman`](roles/podman/) | Podman installation, kernel tuning, rootless config, socket activation, storage config |
 | [`docker`](roles/docker/) | Docker CE lifecycle: repo setup, CLI, compose plugin, daemon config, rootless mode |
+| [`ghapp`](roles/ghapp/) | Runtime-minted repo-scoped GitHub App tokens: CLI + git credential helper, optional unix-socket token broker for containerized agents |
 
 ## Installation
 

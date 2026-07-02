@@ -1,0 +1,99 @@
+---
+- name: Assert the client configuration is complete
+  ansible.builtin.assert:
+    that:
+      - ghapp_client_id | length > 0
+      - ghapp_client_installations | length > 0
+      - >-
+        [ghapp_client_private_key_cmd, ghapp_client_private_key_path,
+         ghapp_client_private_key_content]
+        | select('ne', '') | list | length == 1
+    fail_msg: >-
+      ghapp client mode needs ghapp_client_id, ghapp_client_installations, and
+      exactly one of ghapp_client_private_key_cmd / _path / _content.
+
+- name: Look up the client user's home directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ ghapp_client_user }}"
+  become: true
+
+- name: Set client path facts
+  ansible.builtin.set_fact:
+    __ghapp_client_home: "{{ ansible_facts.getent_passwd[ghapp_client_user][4] }}"
+
+- name: Set client config path facts
+  ansible.builtin.set_fact:
+    __ghapp_client_config_dir: "{{ __ghapp_client_home }}/.config/ghapp"
+    __ghapp_client_key_path: >-
+      {{ ghapp_client_private_key_path
+         if ghapp_client_private_key_path | length > 0
+         else __ghapp_client_home ~ '/.config/ghapp/key.pem' }}
+
+- name: Create the client config directory
+  ansible.builtin.file:
+    path: "{{ __ghapp_client_config_dir }}"
+    state: directory
+    owner: "{{ ghapp_client_user }}"
+    group: "{{ ghapp_client_user }}"
+    mode: "0700"
+  become: true
+
+- name: Write the client private key
+  ansible.builtin.copy:
+    content: "{{ ghapp_client_private_key_content }}"
+    dest: "{{ __ghapp_client_key_path }}"
+    owner: "{{ ghapp_client_user }}"
+    group: "{{ ghapp_client_user }}"
+    mode: "0600"
+  become: true
+  no_log: true
+  when: ghapp_client_private_key_content | length > 0
+
+- name: Render the client ghapp config
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ __ghapp_client_config_dir }}/config.yaml"
+    owner: "{{ ghapp_client_user }}"
+    group: "{{ ghapp_client_user }}"
+    mode: "0600"
+  become: true
+  vars:
+    __ghapp_config_client_id: "{{ ghapp_client_id }}"
+    __ghapp_config_app_slug: "{{ ghapp_client_app_slug }}"
+    __ghapp_config_installations: "{{ ghapp_client_installations }}"
+    __ghapp_config_private_key_cmd: "{{ ghapp_client_private_key_cmd }}"
+    __ghapp_config_private_key_path: >-
+      {{ '' if ghapp_client_private_key_cmd | length > 0 else __ghapp_client_key_path }}
+    __ghapp_config_default_permissions: "{{ ghapp_client_default_permissions }}"
+
+- name: Export GHAPP_CONFIG for login shells
+  ansible.builtin.copy:
+    content: |
+      # Managed by david_igou.devhost.ghapp
+      if [ -f "$HOME/.config/ghapp/config.yaml" ]; then
+        export GHAPP_CONFIG="$HOME/.config/ghapp/config.yaml"
+      fi
+    dest: /etc/profile.d/ghapp.sh
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: ghapp_client_profile_env | bool
+
+- name: Configure the git credential helper for github.com
+  community.general.git_config:
+    name: "credential.https://github.com.{{ item.key }}"
+    value: "{{ item.value }}"
+    scope: global
+    state: present
+  become: true
+  become_user: "{{ ghapp_client_user }}"
+  loop:
+    - key: helper
+      value: ghapp
+    - key: useHttpPath
+      value: "true"
+  loop_control:
+    label: "{{ item.key }}"
+  when: ghapp_client_configure_git_credential_helper | bool

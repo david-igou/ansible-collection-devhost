@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+---
+github_app:
+  client_id: "{{ __ghapp_config_client_id }}"
+{% if __ghapp_config_app_slug | length > 0 %}
+  app_slug: "{{ __ghapp_config_app_slug }}"
+{% endif %}
+  installations:
+{% for owner, installation_id in __ghapp_config_installations.items() %}
+    {{ owner }}: "{{ installation_id }}"
+{% endfor %}
+{% if __ghapp_config_private_key_cmd | length > 0 %}
+  private_key_cmd: {{ __ghapp_config_private_key_cmd }}
+{% else %}
+  private_key_path: {{ __ghapp_config_private_key_path }}
+{% endif %}
+{% if __ghapp_config_default_permissions | length > 0 %}
+  default_permissions:
+{% for name, level in __ghapp_config_default_permissions.items() %}
+    {{ name }}: {{ level }}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+[Unit]
+Description=ghapp GitHub App token broker (policy-clamped repo-scoped tokens over a unix socket)
+Documentation=https://github.com/david-igou/hermes_github_app_plugin
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User={{ ghapp_broker_user }}
+# The unit group controls who may connect: the socket is created 0660
+# {{ ghapp_broker_user }}:{{ ghapp_broker_socket_group }} inside RuntimeDirectory.
+Group={{ ghapp_broker_socket_group }}
+Environment=GHAPP_CONFIG={{ ghapp_broker_config_dir }}/config.yaml
+ExecStart={{ ghapp_venv_path }}/bin/ghapp serve --socket {{ ghapp_broker_socket_path }} --policy {{ ghapp_broker_config_dir }}/policy.yaml --socket-mode {{ ghapp_broker_socket_mode }}
+RuntimeDirectory={{ ghapp_broker_runtime_dir }}
+RuntimeDirectoryMode=0750
+SyslogIdentifier={{ ghapp_broker_service_name }}
+Restart=on-failure
+RestartSec=2
+
+# Hardening: the only writable path is the runtime socket directory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: ghapp
+  author: David Igou
+  description: >-
+    Runtime-minted, repo-scoped GitHub App tokens: installs the ghapp
+    CLI/credential helper and optionally deploys the unix-socket token broker
+    for containerized agent execution.
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "9"
+        - "10"
+
+dependencies: []
