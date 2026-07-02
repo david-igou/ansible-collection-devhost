@@ -1,0 +1,12 @@
+---
+- name: Install the ghapp package
+  ansible.builtin.include_tasks: install.yml
+  when: ghapp_install | bool
+
+- name: Configure the local-mint client
+  ansible.builtin.include_tasks: client.yml
+  when: ghapp_client_enabled | bool
+
+- name: Deploy the token broker
+  ansible.builtin.include_tasks: broker.yml
+  when: ghapp_broker_enabled | bool

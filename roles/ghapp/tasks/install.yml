@@ -1,0 +1,35 @@
+---
+- name: Install venv and git prerequisites (Debian)
+  ansible.builtin.package:
+    name:
+      - python3-venv
+      - git
+    state: present
+  become: true
+  when: ansible_facts.os_family == "Debian"
+
+- name: Install git and pip-module prerequisites (RedHat)
+  ansible.builtin.package:
+    name:
+      - git
+      - python3-packaging
+      - python3-pip
+    state: present
+  become: true
+  when: ansible_facts.os_family == "RedHat"
+
+- name: Install ghapp into its virtualenv
+  ansible.builtin.pip:
+    name: "{{ ghapp_package_spec }}"
+    state: present
+    virtualenv: "{{ ghapp_venv_path }}"
+    virtualenv_command: "python3 -m venv"
+  become: true
+
+- name: Symlink ghapp console scripts into the system PATH
+  ansible.builtin.file:
+    src: "{{ ghapp_venv_path }}/bin/{{ item }}"
+    dest: "{{ ghapp_bin_dir }}/{{ item }}"
+    state: link
+  become: true
+  loop: "{{ ghapp_console_scripts }}"

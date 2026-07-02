@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+# Broker minting policy: requests outside this are DENIED (never clamped)
+# and every decision is audited to journald (SYSLOG_IDENTIFIER={{ ghapp_broker_service_name }}).
+---
+policy:
+  allowed_repos:
+{% for repo in ghapp_broker_policy.allowed_repos %}
+    - {{ repo }}
+{% endfor %}
+  max_permissions:
+{% for name, level in (ghapp_broker_policy.max_permissions | default({'contents': 'write'})).items() %}
+    {{ name }}: {{ level }}
+{% endfor %}
+  default_permissions:
+{% for name, level in (ghapp_broker_policy.default_permissions | default({'contents': 'read'})).items() %}
+    {{ name }}: {{ level }}
+{% endfor %}

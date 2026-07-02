@@ -1,0 +1,8 @@
+---
+- name: Restart the ghapp broker
+  ansible.builtin.systemd:
+    name: "{{ ghapp_broker_service_name }}.service"
+    state: restarted
+    daemon_reload: true
+  become: true
+  when: ghapp_broker_manage_service | bool

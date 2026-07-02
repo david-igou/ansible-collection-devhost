@@ -1,0 +1,195 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  become: false
+
+  vars:
+    __ghapp_socket: /run/ghbroker/ghbroker.sock
+
+  tasks:
+    - name: Check ghapp console scripts on the PATH
+      ansible.builtin.command:
+        cmd: "{{ item }} --help"
+      changed_when: false
+      loop:
+        - /usr/local/bin/ghapp
+        - /usr/local/bin/gh-app
+        - /usr/local/bin/git-app
+
+    - name: Check the credential helper handles store as a no-op
+      ansible.builtin.command:
+        cmd: /usr/local/bin/git-credential-ghapp store
+      changed_when: false
+
+    - name: Read the rendered client config
+      ansible.builtin.slurp:
+        src: /root/.config/ghapp/config.yaml
+      register: __client_config
+      become: true
+
+    - name: Assert the client config content
+      ansible.builtin.assert:
+        that:
+          - __client_yaml.github_app.client_id == "Iv23moleculeclient"
+          - __client_yaml.github_app.installations.exampleorg == "111"
+          - __client_yaml.github_app.installations.exampleuser == "222"
+          - __client_yaml.github_app.private_key_path == "/root/.config/ghapp/key.pem"
+        fail_msg: "client config.yaml does not match the converge vars"
+      vars:
+        __client_yaml: "{{ __client_config.content | b64decode | from_yaml }}"
+
+    - name: Stat the client private key
+      ansible.builtin.stat:
+        path: /root/.config/ghapp/key.pem
+      register: __client_key
+      become: true
+
+    - name: Assert the client key is locked down
+      ansible.builtin.assert:
+        that:
+          - __client_key.stat.exists
+          - __client_key.stat.mode == "0600"
+        fail_msg: "client key.pem missing or not 0600"
+
+    - name: Check the git credential helper configuration  # noqa: command-instead-of-module -- read-only verify of what git itself resolves
+      ansible.builtin.command:
+        cmd: git config --global --get "credential.https://github.com.{{ item.key }}"
+      register: __git_config
+      changed_when: false
+      failed_when: __git_config.stdout != item.value
+      loop:
+        - key: helper
+          value: ghapp
+        - key: useHttpPath
+          value: "true"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Stat the broker private key
+      ansible.builtin.stat:
+        path: /etc/ghbroker/key.pem
+      register: __broker_key
+      become: true
+
+    - name: Assert the broker key is owned by ghbroker and 0600
+      ansible.builtin.assert:
+        that:
+          - __broker_key.stat.exists
+          - __broker_key.stat.mode == "0600"
+          - __broker_key.stat.pw_name == "ghbroker"
+        fail_msg: "broker key.pem missing, wrong owner, or not 0600"
+
+    - name: Assert the broker key is unreadable to a non-ghbroker user
+      ansible.builtin.command:
+        cmd: runuser -u nobody -- cat /etc/ghbroker/key.pem
+      register: __key_probe
+      changed_when: false
+      failed_when: __key_probe.rc == 0
+      become: true
+
+    - name: Create the broker runtime directory (no systemd in molecule)
+      ansible.builtin.file:
+        path: /run/ghbroker
+        state: directory
+        owner: ghbroker
+        group: ghbroker
+        mode: "0750"
+      become: true
+
+    - name: Start the broker manually in the background
+      ansible.builtin.shell:
+        cmd: >-
+          nohup runuser -u ghbroker --
+          env GHAPP_CONFIG=/etc/ghbroker/config.yaml
+          /opt/ghapp/bin/ghapp serve
+          --socket {{ __ghapp_socket }}
+          --policy /etc/ghbroker/policy.yaml
+          > /tmp/ghapp-broker.log 2>&1 &
+          echo $! > /tmp/ghapp-broker.pid
+      changed_when: true
+      become: true
+      # noqa command-instead-of-shell -- backgrounding a daemon needs the shell
+
+    - name: Wait for the broker socket
+      ansible.builtin.wait_for:
+        path: "{{ __ghapp_socket }}"
+        timeout: 15
+      become: true
+
+    - name: Probe the broker health endpoint
+      ansible.builtin.uri:
+        url: http://localhost/healthz
+        unix_socket: "{{ __ghapp_socket }}"
+        return_content: true
+      register: __healthz
+      failed_when: __healthz.json.ok is not true
+      become: true
+
+    - name: Read the broker status endpoint
+      ansible.builtin.uri:
+        url: http://localhost/status
+        unix_socket: "{{ __ghapp_socket }}"
+        return_content: true
+      register: __status
+      become: true
+
+    - name: Assert the broker status reflects config and policy
+      ansible.builtin.assert:
+        that:
+          - __status.json.app_slug == "molecule-broker"
+          - __status.json.policy.allowed_repos == ["exampleorg/allowed-repo"]
+          - __status.json.policy.max_permissions.contents == "write"
+        fail_msg: "broker /status does not match the converged config/policy"
+
+    - name: Request a token for a repo outside the policy
+      ansible.builtin.uri:
+        url: http://localhost/token
+        unix_socket: "{{ __ghapp_socket }}"
+        method: POST
+        body_format: json
+        body:
+          repo: exampleorg/forbidden
+          permissions:
+            contents: read
+        status_code: 403
+      become: true
+
+    - name: Request a permission above the policy ceiling
+      ansible.builtin.uri:
+        url: http://localhost/token
+        unix_socket: "{{ __ghapp_socket }}"
+        method: POST
+        body_format: json
+        body:
+          repo: exampleorg/allowed-repo
+          permissions:
+            secrets: write
+        status_code: 403
+      become: true
+
+    - name: Check the denials were audited
+      ansible.builtin.command:
+        cmd: >-
+          grep -c '"decision": "denied"' /tmp/ghapp-broker.log
+      register: __audit
+      changed_when: false
+      failed_when: __audit.stdout | int < 2
+      become: true
+
+    - name: Stop the manually started broker
+      ansible.builtin.shell:
+        cmd: kill "$(cat /tmp/ghapp-broker.pid)"
+      register: __broker_kill
+      changed_when: __broker_kill.rc == 0
+      failed_when: false
+      become: true
+      # noqa command-instead-of-shell -- command substitution for the pidfile
+
+    - name: Summarize verification
+      ansible.builtin.debug:
+        msg: >-
+          Verified: console scripts callable, client config + 0600 key +
+          git credential helper, broker key ownership/permissions, broker
+          /healthz + /status over the unix socket, out-of-policy repo and
+          permission both denied with 403, denials present in the audit log.

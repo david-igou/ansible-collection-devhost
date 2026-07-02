@@ -1,0 +1,59 @@
+---
+# Package installation (venv keeps us independent of PEP 668 / distro pip policy)
+ghapp_install: true
+ghapp_venv_path: /opt/ghapp
+ghapp_bin_dir: /usr/local/bin
+ghapp_package_git_url: https://github.com/david-igou/hermes_github_app_plugin
+ghapp_package_git_ref: main
+ghapp_package_spec: "hermes-github-app-plugin @ git+{{ ghapp_package_git_url }}@{{ ghapp_package_git_ref }}"
+ghapp_console_scripts:
+  - ghapp
+  - gh-app
+  - git-app
+  - git-credential-ghapp
+
+# Client / local-mint mode: renders the per-user config and git credential
+# helper so plain `git push` on HTTPS GitHub remotes mints repo-scoped tokens.
+ghapp_client_enabled: false
+ghapp_client_user: "{{ ansible_user_id }}"
+ghapp_client_id: ""
+ghapp_client_app_slug: ""
+# owner -> installation id, e.g. {david-igou: "143866260", igou-io: "143866153"}
+ghapp_client_installations: {}
+# Exactly one key source: a command resolved at mint time (preferred, e.g. an
+# `op read`), an existing PEM path, or inline content the role writes to disk.
+ghapp_client_private_key_cmd: ""
+ghapp_client_private_key_path: ""
+ghapp_client_private_key_content: ""
+ghapp_client_default_permissions: {}
+ghapp_client_configure_git_credential_helper: true
+# Export GHAPP_CONFIG for login shells so the CLI finds the per-user config.
+ghapp_client_profile_env: true
+
+# Broker mode: a dedicated system user owns the App key and serves
+# policy-clamped tokens over a unix socket (for containerized agents).
+ghapp_broker_enabled: false
+ghapp_broker_user: ghbroker
+ghapp_broker_group: ghbroker
+# Group granted connect access to the socket (e.g. the agent service user).
+ghapp_broker_socket_group: "{{ ghapp_broker_group }}"
+ghapp_broker_runtime_dir: ghbroker
+ghapp_broker_socket_path: "/run/{{ ghapp_broker_runtime_dir }}/ghbroker.sock"
+ghapp_broker_socket_mode: "0660"
+ghapp_broker_config_dir: /etc/ghbroker
+ghapp_broker_client_id: ""
+ghapp_broker_app_slug: ""
+ghapp_broker_installations: {}
+ghapp_broker_private_key_content: ""
+# policy.yaml content: allowed_repos (globs), max_permissions, default_permissions
+ghapp_broker_policy:
+  allowed_repos: []
+  max_permissions:
+    contents: write
+    pull_requests: write
+    issues: write
+  default_permissions:
+    contents: read
+ghapp_broker_service_name: ghapp-broker
+# Disable to skip systemd unit start (e.g. molecule containers without systemd).
+ghapp_broker_manage_service: true

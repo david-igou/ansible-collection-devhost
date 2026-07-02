@@ -1,0 +1,141 @@
+---
+argument_specs:
+  main:
+    short_description: Install ghapp and configure local-mint or broker GitHub App token minting
+    description:
+      - Installs the ghapp package (hermes-github-app-plugin) into a dedicated
+        virtualenv and symlinks its console scripts onto the system PATH.
+      - Client mode renders a per-user config (GitHub App client ID,
+        owner-to-installation map, private key source) and wires the git
+        credential helper so HTTPS GitHub operations mint fresh single-repo
+        tokens at runtime.
+      - Broker mode deploys a hardened systemd service running
+        C(ghapp serve) as a dedicated system user that owns the App private
+        key and serves policy-clamped tokens over a unix socket, for
+        containerized agents that must never see key material.
+    options:
+      ghapp_install:
+        type: bool
+        default: true
+        description: Install the package, virtualenv, and PATH symlinks.
+      ghapp_venv_path:
+        type: str
+        default: /opt/ghapp
+        description: Virtualenv directory for the package.
+      ghapp_bin_dir:
+        type: str
+        default: /usr/local/bin
+        description: Directory receiving console-script symlinks.
+      ghapp_package_git_url:
+        type: str
+        default: https://github.com/david-igou/hermes_github_app_plugin
+        description: Git URL the package installs from.
+      ghapp_package_git_ref:
+        type: str
+        default: main
+        description: Git ref (branch, tag, or SHA) of the package to install.
+      ghapp_package_spec:
+        type: str
+        description: Full pip requirement spec; overrides the URL/ref pair.
+      ghapp_console_scripts:
+        type: list
+        elements: str
+        description: Console scripts to symlink into ghapp_bin_dir.
+      ghapp_client_enabled:
+        type: bool
+        default: false
+        description: Render local-mint client configuration.
+      ghapp_client_user:
+        type: str
+        description: User receiving the client config and gitconfig helper.
+      ghapp_client_id:
+        type: str
+        description: GitHub App client ID (client mode).
+      ghapp_client_app_slug:
+        type: str
+        description: GitHub App slug, e.g. igou-dev.
+      ghapp_client_installations:
+        type: dict
+        description: Owner to installation-id map, one entry per account.
+      ghapp_client_private_key_cmd:
+        type: str
+        description: >-
+          Command printing the App PEM at mint time (e.g. an op read).
+          Exactly one key source must be set.
+      ghapp_client_private_key_path:
+        type: str
+        description: Path to an existing App PEM on the host.
+      ghapp_client_private_key_content:
+        type: str
+        description: Inline PEM the role writes to a 0600 file for the user.
+      ghapp_client_default_permissions:
+        type: dict
+        description: Default permission set for unspecified mints.
+      ghapp_client_configure_git_credential_helper:
+        type: bool
+        default: true
+        description: Set credential.https://github.com helper=ghapp + useHttpPath.
+      ghapp_client_profile_env:
+        type: bool
+        default: true
+        description: Export GHAPP_CONFIG for login shells via /etc/profile.d.
+      ghapp_broker_enabled:
+        type: bool
+        default: false
+        description: Deploy the unix-socket token broker service.
+      ghapp_broker_user:
+        type: str
+        default: ghbroker
+        description: Dedicated system user owning the App private key.
+      ghapp_broker_group:
+        type: str
+        default: ghbroker
+        description: Primary group of the broker user.
+      ghapp_broker_socket_group:
+        type: str
+        description: >-
+          Group granted connect access to the socket (the agent service
+          user's group). Defaults to the broker group.
+      ghapp_broker_runtime_dir:
+        type: str
+        default: ghbroker
+        description: systemd RuntimeDirectory name under /run.
+      ghapp_broker_socket_path:
+        type: str
+        description: Unix socket path the broker listens on.
+      ghapp_broker_socket_mode:
+        type: str
+        default: "0660"
+        description: Octal socket file mode.
+      ghapp_broker_config_dir:
+        type: str
+        default: /etc/ghbroker
+        description: Directory for the broker config, policy, and key.
+      ghapp_broker_client_id:
+        type: str
+        description: GitHub App client ID (broker mode).
+      ghapp_broker_app_slug:
+        type: str
+        description: GitHub App slug (broker mode).
+      ghapp_broker_installations:
+        type: dict
+        description: Owner to installation-id map (broker mode).
+      ghapp_broker_private_key_content:
+        type: str
+        description: App PEM content, written 0600 for the broker user only.
+      ghapp_broker_policy:
+        type: dict
+        description: >-
+          Minting policy rendered to policy.yaml. Keys: allowed_repos
+          (OWNER/REPO globs), max_permissions, default_permissions.
+          Out-of-policy requests are denied, never clamped.
+      ghapp_broker_service_name:
+        type: str
+        default: ghapp-broker
+        description: systemd service name (also the journald identifier).
+      ghapp_broker_manage_service:
+        type: bool
+        default: true
+        description: >-
+          Enable and start the systemd unit. Disable in environments without
+          systemd (e.g. molecule containers).
