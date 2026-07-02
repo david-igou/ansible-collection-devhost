@@ -4,6 +4,14 @@ david\_igou.devhost Release Notes
 
 .. contents:: Topics
 
+v27.1.2
+=======
+
+Minor Changes
+-------------
+
+- ghapp broker — optional SELinux confinement (``ghapp_broker_selinux_confine``, default true). On SELinux-enabled hosts the role builds and loads a policy module running the broker in a dedicated ``ghbroker_t`` domain with a dedicated socket type, so a confined agent container may connect to the broker socket via a narrowly scoped ``connectto``/``sock_file`` grant instead of disabling the container label or granting connect to a broad host type. Validated enforcing on CentOS Stream 10 via the igou-ansible kubevirt e2e.
+
 v27.1.1
 =======
 
