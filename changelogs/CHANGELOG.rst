@@ -4,6 +4,14 @@ david\_igou.devhost Release Notes
 
 .. contents:: Topics
 
+v27.1.1
+=======
+
+Bugfixes
+--------
+
+- ghapp broker unit — add ``SupplementaryGroups={{ ghapp_broker_group }}``: ``Group=`` (the socket-access group) replaces the primary gid, which cost the broker its group-read on the config/policy files and crash-looped the service whenever the socket group differed from the broker group (the Hermes wiring). Found live in the kubevirt e2e scenario.
+
 v27.1.0
 =======
 
