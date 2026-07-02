@@ -26,6 +26,20 @@
     virtualenv_command: "python3 -m venv"
   become: true
 
+# `python3 -m venv` honors the login umask. On a hardened host (umask 0077) the
+# venv is created 0700 root, so a non-root broker service user (User=ghbroker)
+# cannot traverse or read it — the service then dies 203/EXEC "Permission
+# denied". Make the venv world-readable + traversable so the service user can
+# exec the entrypoint and import the package. The venv holds only package code;
+# the App private key lives outside it (ghapp_broker_private_key_path).
+- name: Ensure the ghapp virtualenv is readable and traversable by the service user
+  ansible.builtin.file:
+    path: "{{ ghapp_venv_path }}"
+    state: directory
+    mode: u=rwX,go=rX
+    recurse: true
+  become: true
+
 - name: Symlink ghapp console scripts into the system PATH
   ansible.builtin.file:
     src: "{{ ghapp_venv_path }}/bin/{{ item }}"
