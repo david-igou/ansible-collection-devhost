@@ -97,10 +97,14 @@
         mode: "0750"
       become: true
 
+    # Mirror the systemd unit's credentials exactly: uid=ghbroker,
+    # gid=<socket group>, supplementary=ghbroker (Group= replaces the primary
+    # gid, so config/policy reads depend on the supplementary group).
     - name: Start the broker manually in the background
       ansible.builtin.shell:
         cmd: >-
-          nohup runuser -u ghbroker --
+          nohup setpriv --reuid ghbroker --regid ghapp-clients --groups
+          "$(getent group ghbroker | cut -d: -f3)"
           env GHAPP_CONFIG=/etc/ghbroker/config.yaml
           /opt/ghapp/bin/ghapp serve
           --socket {{ __ghapp_socket }}

@@ -19,6 +19,11 @@
     ghapp_client_private_key_content: "{{ __molecule_fake_pem }}"
     ghapp_broker_enabled: true
     ghapp_broker_manage_service: false
+    # Distinct socket-access group: the systemd unit runs with
+    # Group=<socket_group>, which replaces the primary gid — the broker must
+    # still read the ghbroker-group config/policy via SupplementaryGroups.
+    # Keeping this split in the scenario covers that path.
+    ghapp_broker_socket_group: ghapp-clients
     ghapp_broker_client_id: "Iv23moleculebroker"
     ghapp_broker_app_slug: molecule-broker
     ghapp_broker_installations:
