@@ -103,8 +103,7 @@
     - name: Start the broker manually in the background
       ansible.builtin.shell:
         cmd: >-
-          nohup setpriv --reuid ghbroker --regid ghapp-clients --groups
-          "$(getent group ghbroker | cut -d: -f3)"
+          nohup setpriv --reuid ghbroker --regid ghapp-clients --groups ghbroker
           env GHAPP_CONFIG=/etc/ghbroker/config.yaml
           /opt/ghapp/bin/ghapp serve
           --socket {{ __ghapp_socket }}
