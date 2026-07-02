@@ -11,6 +11,11 @@ User={{ ghapp_broker_user }}
 # The unit group controls who may connect: the socket is created 0660
 # {{ ghapp_broker_user }}:{{ ghapp_broker_socket_group }} inside RuntimeDirectory.
 Group={{ ghapp_broker_socket_group }}
+# Group= replaces the primary gid, which would otherwise cost the process its
+# group-read on the {{ ghapp_broker_group }}-group config/policy under
+# {{ ghapp_broker_config_dir }} (observed: PermissionError on config.yaml and
+# a start-limit crash loop whenever socket_group != broker group).
+SupplementaryGroups={{ ghapp_broker_group }}
 Environment=GHAPP_CONFIG={{ ghapp_broker_config_dir }}/config.yaml
 ExecStart={{ ghapp_venv_path }}/bin/ghapp serve --socket {{ ghapp_broker_socket_path }} --policy {{ ghapp_broker_config_dir }}/policy.yaml --socket-mode {{ ghapp_broker_socket_mode }}
 RuntimeDirectory={{ ghapp_broker_runtime_dir }}
