@@ -139,3 +139,16 @@ argument_specs:
         description: >-
           Enable and start the systemd unit. Disable in environments without
           systemd (e.g. molecule containers).
+      ghapp_broker_selinux_confine:
+        type: bool
+        default: true
+        description: >-
+          On SELinux-enabled hosts, build and load a policy module that runs
+          the broker in a dedicated ghbroker_t domain and lets confined
+          containers connect to its socket (scoped connectto). No-op where
+          SELinux is disabled. Also drops NoNewPrivileges from the unit (it
+          blocks the exec-domain transition).
+      ghapp_broker_selinux_build_packages:
+        type: list
+        elements: str
+        description: Packages providing the SELinux refpolicy build toolchain.

@@ -57,3 +57,11 @@ ghapp_broker_policy:
 ghapp_broker_service_name: ghapp-broker
 # Disable to skip systemd unit start (e.g. molecule containers without systemd).
 ghapp_broker_manage_service: true
+# Confine the broker in its own SELinux domain (ghbroker_t) so a confined agent
+# container may connect to the socket without weakening the container. Only
+# takes effect where SELinux is actually enabled; a no-op otherwise.
+ghapp_broker_selinux_confine: true
+ghapp_broker_selinux_build_packages:
+  - selinux-policy-devel
+  - checkpolicy
+  - policycoreutils
