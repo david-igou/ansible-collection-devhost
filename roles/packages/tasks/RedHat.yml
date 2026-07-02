@@ -9,13 +9,13 @@
       - unzip
     state: present
 
-- name: Install distro Node.js packages
+- name: Install distro Node.js packages (fallback when mise CLI tools are disabled)
   ansible.builtin.dnf:
     name:
       - nodejs
       - npm
     state: present
-  when: not packages_install_nodejs_pinned
+  when: not packages_install_cli_tools
 
 - name: Add 1Password yum repository
   ansible.builtin.yum_repository:
@@ -41,13 +41,22 @@
     gpgkey: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x23F3D4EA75716059
     gpgcheck: true
     enabled: true
-  when: packages_install_github_cli
+  when: packages_install_github_cli and not packages_install_cli_tools
 
 - name: Install GitHub CLI
   ansible.builtin.dnf:
     name: gh
     state: present
-  when: packages_install_github_cli
+  when: packages_install_github_cli and not packages_install_cli_tools
+
+- name: Check which dnf repositories are enabled
+  ansible.builtin.command:
+    cmd: dnf repolist --enabled
+  register: __packages_repolist
+  changed_when: false
+  when:
+    - packages_install_extra_packages
+    - ansible_facts.distribution != 'Fedora'
 
 - name: Enable CRB repository
   ansible.builtin.command:
@@ -57,6 +66,7 @@
   when:
     - packages_install_extra_packages
     - ansible_facts.distribution != 'Fedora'
+    - "'crb' not in __packages_repolist.stdout"
 
 - name: Install EPEL repository
   ansible.builtin.dnf:

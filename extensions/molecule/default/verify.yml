@@ -144,11 +144,12 @@
       register: _node
       changed_when: false
 
-    - name: Assert Node.js version
+    - name: Assert Node.js is installed
       ansible.builtin.assert:
         that:
-          - _node.stdout == packages_nodejs_version
-        fail_msg: "Node.js version mismatch: got {{ _node.stdout }}, expected {{ packages_nodejs_version }}"
+          - _node.rc == 0
+          - _node.stdout | length > 0
+        fail_msg: "node did not return a version string (mise-managed)"
 
     - name: Check npm is available
       ansible.builtin.command:

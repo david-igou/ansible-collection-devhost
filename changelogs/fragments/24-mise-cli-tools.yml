@@ -1,0 +1,28 @@
+---
+minor_changes:
+  - >-
+    packages role - CLI tools (kubectl, helm, kustomize, virtctl, argocd, flux,
+    kubeseal, tkn, terraform, sops, oc, kubeconform, kube-burner, kube-burner-ocp,
+    act, rclone, and Node.js) are now installed and version-pinned via ``mise``
+    instead of per-tool ``get_url``/``unarchive`` tasks. The tool set (``mise.toml``
+    + the committed ``mise.lock`` + the GPG postinstall hooks) is fetched from the
+    igou-devenv repo (``packages_mise_source_repo`` / ``packages_mise_source_ref``,
+    pinned to an immutable commit SHA) as the single source of truth, so versions
+    are maintained in one place. mise itself is installed from a GPG-pinned tarball
+    and the tool binaries are symlinked into /usr/local/bin. Distro-agnostic (the
+    same binaries on Debian and RedHat)
+    (https://github.com/david-igou/ansible-collection-devhost/issues/24).
+breaking_changes:
+  - >-
+    packages role - The 17 per-tool ``packages_install_*`` flags and
+    ``packages_*_version`` vars (and ``packages_install_nodejs_pinned`` /
+    ``packages_nodejs_version``) are removed; CLI tools are now gated by the
+    single ``packages_install_cli_tools`` flag and versioned via the fetched
+    igou-devenv ``mise.toml``. A ``GITHUB_TOKEN`` (via ``packages_github_token``
+    or the environment) is recommended for ``mise install`` to avoid GitHub API
+    rate limits.
+  - >-
+    packages role - When ``packages_install_cli_tools`` is enabled, the GitHub CLI
+    (``gh``) is now provided by mise, so the distro ``gh`` package is no longer
+    installed even when ``packages_install_github_cli`` is true. The distro ``gh``
+    is only installed as a fallback when the mise tool set is disabled.

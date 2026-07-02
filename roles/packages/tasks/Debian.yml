@@ -11,13 +11,13 @@
     state: present
     update_cache: true
 
-- name: Install distro Node.js packages
+- name: Install distro Node.js packages (fallback when mise CLI tools are disabled)
   ansible.builtin.apt:
     name:
       - nodejs
       - npm
     state: present
-  when: not packages_install_nodejs_pinned
+  when: not packages_install_cli_tools
 
 - name: Add 1Password GPG key
   ansible.builtin.apt_key:
@@ -45,21 +45,21 @@
     url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
     keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
     state: present
-  when: packages_install_github_cli
+  when: packages_install_github_cli and not packages_install_cli_tools
 
 - name: Add GitHub CLI apt repository
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
     filename: github-cli
     state: present
-  when: packages_install_github_cli
+  when: packages_install_github_cli and not packages_install_cli_tools
 
 - name: Install GitHub CLI
   ansible.builtin.apt:
     name: gh
     state: present
     update_cache: true
-  when: packages_install_github_cli
+  when: packages_install_github_cli and not packages_install_cli_tools
 
 - name: Install extra packages
   ansible.builtin.apt:

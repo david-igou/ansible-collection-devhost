@@ -29,7 +29,7 @@ The entry-point playbook (`playbooks/site.yml`) runs: `packages` -> `host_prep` 
 - **FQCNs**: Always use fully qualified collection names (`ansible.builtin.copy`, not `copy`).
 - **Multi-distro dispatch**: Per-distro task files named `Debian.yml` / `RedHat.yml`, included via `ansible_facts.os_family`.
 - **Become strategy**: No `become: true` at play level. Each task declares it individually.
-- **Version pinning**: Renovate manages versions via `# renovate:` annotations in role defaults.
+- **Version pinning**: Renovate manages versions via `# renovate:` annotations in role defaults. The `packages` role's CLI tool set + versions live in **igou-devenv's `mise.toml`/`mise.lock`** (fetched at `packages_mise_source_ref`) — the single source of truth; bump tool versions in igou-devenv and advance the `packages_mise_source_ref` pin.
 - **Booleans**: Use `true`/`false`, never `yes`/`no`.
 - **Strings**: Use double quotes for YAML strings; single quotes for Jinja2 expressions.
 

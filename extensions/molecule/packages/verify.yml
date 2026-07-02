@@ -4,456 +4,98 @@
   gather_facts: true
   become: false
 
+  vars:
+    # The mise-managed tool set is verified dynamically from the fetched mise.toml
+    # (via `mise ls` + `mise bin-paths`), so it tracks igou-devenv automatically
+    # instead of a hand-synced list. Only the non-mise CLIs (distro/pip/npm) are
+    # enumerated explicitly here.
+    _packages_nonmise_cli:
+      - git
+      - jq
+      - make
+      - gpg
+      - op
+      - ansible
+      - molecule
+      - yq
+      - vim
+      - tmux
+      - nmap
+      - rsync
+    _packages_mise_env:
+      MISE_GLOBAL_CONFIG_FILE: /etc/mise/mise.toml
+      MISE_DATA_DIR: /opt/mise
+      MISE_TRUSTED_CONFIG_PATHS: /etc/mise/mise.toml
+
   tasks:
-    - name: Load packages role defaults
-      ansible.builtin.include_vars:
-        file: ../../../roles/packages/defaults/main.yml
-
-    - name: Check git is installed # noqa: command-instead-of-module
+    - name: Query mise for any pinned tool that is not installed
       ansible.builtin.command:
-        cmd: git --version
-      register: _git
+        cmd: /usr/local/bin/mise ls --missing
+      environment: "{{ _packages_mise_env }}"
+      register: _mise_missing
       changed_when: false
 
-    - name: Check devcontainer CLI is installed
-      ansible.builtin.command:
-        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/devcontainer --version"
-      register: _devcontainer
-      changed_when: false
-
-    - name: Check jq is installed
-      ansible.builtin.command:
-        cmd: jq --version
-      register: _jq
-      changed_when: false
-
-    - name: Check make is installed
-      ansible.builtin.command:
-        cmd: make --version
-      register: _make
-      changed_when: false
-
-    - name: Check kubectl is installed
-      ansible.builtin.command:
-        cmd: kubectl version --client -o json
-      register: _kubectl
-      changed_when: false
-
-    - name: Assert kubectl version
+    - name: Assert every pinned mise tool is installed at its locked version
       ansible.builtin.assert:
         that:
-          - packages_kubectl_version in _kubectl.stdout
-        fail_msg: "kubectl version mismatch: expected {{ packages_kubectl_version }}"
+          - _mise_missing.stdout | trim | length == 0
+        fail_msg: "mise reports tools not installed at their pinned version:\n{{ _mise_missing.stdout }}"
+        success_msg: "all pinned mise tools are installed at their locked versions"
 
-    - name: Check helm is installed
-      ansible.builtin.command:
-        cmd: helm version --short
-      register: _helm
+    - name: Assert every mise-managed binary is symlinked into /usr/local/bin # noqa: command-instead-of-shell -- bin-paths pipe + loop
+      ansible.builtin.shell:
+        executable: /usr/bin/bash
+        cmd: |
+          set -euo pipefail
+          missing=""
+          for d in $(/usr/local/bin/mise bin-paths 2>/dev/null); do
+            while IFS= read -r f; do
+              b="$(basename "$f")"
+              [ -e "/usr/local/bin/$b" ] || missing="$missing $b"
+            done < <(find -L "$d" -maxdepth 1 -type f -executable)
+          done
+          if [ -n "$missing" ]; then echo "NOT symlinked into /usr/local/bin:$missing"; exit 1; fi
+          echo "all mise binaries symlinked into /usr/local/bin"
+      environment: "{{ _packages_mise_env }}"
+      register: _mise_symlinks
       changed_when: false
 
-    - name: Assert helm version
-      ansible.builtin.assert:
-        that:
-          - packages_helm_version in _helm.stdout
-        fail_msg: "helm version mismatch: expected {{ packages_helm_version }}"
-
-    - name: Check kustomize is installed
-      ansible.builtin.command:
-        cmd: kustomize version
-      register: _kustomize
+    - name: Check the non-mise CLIs resolve on PATH # noqa: command-instead-of-shell -- command -v is a shell builtin
+      ansible.builtin.shell: "command -v {{ item }}"
+      register: _nonmise
       changed_when: false
+      failed_when: _nonmise.rc != 0
+      loop: "{{ _packages_nonmise_cli }}"
+      loop_control:
+        label: "{{ item }}"
 
-    - name: Assert kustomize version
-      ansible.builtin.assert:
-        that:
-          - packages_kustomize_version in _kustomize.stdout
-        fail_msg: "kustomize version mismatch: expected {{ packages_kustomize_version }}"
-
-    - name: Check virtctl is installed
+    - name: Check the ~/.local/bin agent CLIs report a version
       ansible.builtin.command:
-        cmd: virtctl version --client
-      register: _virtctl
+        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/{{ item }} --version"
+      register: _local_cli
       changed_when: false
+      failed_when: false
+      loop:
+        - devcontainer
+        - claude
+        - agent
+      loop_control:
+        label: "{{ item }}"
 
-    - name: Assert virtctl version
+    - name: Assert every ~/.local/bin CLI returned a version
       ansible.builtin.assert:
         that:
-          - packages_virtctl_version in _virtctl.stdout
-        fail_msg: "virtctl version mismatch: expected {{ packages_virtctl_version }}"
-
-    - name: Check 1Password CLI version
-      ansible.builtin.command:
-        cmd: op --version
-      register: _op
-      changed_when: false
-
-    - name: Assert 1Password CLI reports a version
-      ansible.builtin.assert:
-        that:
-          - _op.stdout | length > 0
-        fail_msg: "op did not return a version string"
-
-    - name: Check GitHub CLI version
-      ansible.builtin.command:
-        cmd: gh --version
-      register: _gh
-      changed_when: false
-
-    - name: Assert GitHub CLI reports a version
-      ansible.builtin.assert:
-        that:
-          - _gh.stdout | length > 0
-        fail_msg: "gh did not return a version string"
-
-    - name: Check Claude Code CLI version
-      ansible.builtin.command:
-        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/claude --version"
-      register: _claude
-      changed_when: false
-
-    - name: Assert Claude Code reports a version
-      ansible.builtin.assert:
-        that:
-          - _claude.stdout | length > 0
-        fail_msg: "claude did not return a version string"
-
-    - name: Check Cursor agent CLI version
-      ansible.builtin.command:
-        cmd: "{{ ansible_facts.env.HOME }}/.local/bin/agent --version"
-      register: _cursor_agent
-      changed_when: false
-
-    - name: Assert Cursor agent reports a version
-      ansible.builtin.assert:
-        that:
-          - _cursor_agent.stdout | length > 0
-        fail_msg: "cursor-agent did not return a version string"
-
-    - name: Check Node.js version
-      ansible.builtin.command:
-        cmd: node --version
-      register: _node
-      changed_when: false
-
-    - name: Assert Node.js version
-      ansible.builtin.assert:
-        that:
-          - _node.stdout == packages_nodejs_version
-        fail_msg: "Node.js version mismatch: got {{ _node.stdout }}, expected {{ packages_nodejs_version }}"
-
-    - name: Check npm is available
-      ansible.builtin.command:
-        cmd: npm --version
-      register: _npm
-      changed_when: false
-
-    - name: Assert npm is available
-      ansible.builtin.assert:
-        that:
-          - _npm.rc == 0
-        fail_msg: "npm is not installed"
-
-    - name: Check ansible is installed
-      ansible.builtin.command:
-        cmd: ansible --version
-      register: _ansible
-      changed_when: false
-
-    - name: Assert ansible is available
-      ansible.builtin.assert:
-        that:
-          - _ansible.rc == 0
-        fail_msg: "ansible is not installed"
-
-    - name: Check molecule is installed
-      ansible.builtin.command:
-        cmd: molecule --version
-      register: _molecule
-      changed_when: false
-
-    - name: Assert molecule is available
-      ansible.builtin.assert:
-        that:
-          - _molecule.rc == 0
-        fail_msg: "molecule is not installed"
-
-    - name: Check yq is installed
-      ansible.builtin.command:
-        cmd: yq --version
-      register: _yq
-      changed_when: false
-
-    - name: Assert yq is available
-      ansible.builtin.assert:
-        that:
-          - _yq.rc == 0
-        fail_msg: "yq is not installed"
-
-    - name: Check vim is installed
-      ansible.builtin.command:
-        cmd: vim --version
-      register: _vim
-      changed_when: false
-
-    - name: Assert vim is available
-      ansible.builtin.assert:
-        that:
-          - _vim.rc == 0
-        fail_msg: "vim is not installed"
-
-    - name: Check tmux is installed
-      ansible.builtin.command:
-        cmd: tmux -V
-      register: _tmux
-      changed_when: false
-
-    - name: Assert tmux is available
-      ansible.builtin.assert:
-        that:
-          - _tmux.rc == 0
-        fail_msg: "tmux is not installed"
-
-    - name: Check nmap is installed
-      ansible.builtin.command:
-        cmd: nmap --version
-      register: _nmap
-      changed_when: false
-
-    - name: Assert nmap is available
-      ansible.builtin.assert:
-        that:
-          - _nmap.rc == 0
-        fail_msg: "nmap is not installed"
-
-    - name: Check rsync is installed # noqa: command-instead-of-module
-      ansible.builtin.command:
-        cmd: rsync --version
-      register: _rsync
-      changed_when: false
-
-    - name: Assert rsync is available
-      ansible.builtin.assert:
-        that:
-          - _rsync.rc == 0
-        fail_msg: "rsync is not installed"
-
-    - name: Check gpg is installed
-      ansible.builtin.command:
-        cmd: gpg --version
-      register: _gpg
-      changed_when: false
-
-    - name: Assert gpg is available
-      ansible.builtin.assert:
-        that:
-          - _gpg.rc == 0
-        fail_msg: "gpg is not installed"
-
-    - name: Check direnv is installed
-      ansible.builtin.command:
-        cmd: direnv version
-      register: _direnv
-      changed_when: false
-      when: ansible_facts.os_family == "Debian"
-
-    - name: Assert direnv is available
-      ansible.builtin.assert:
-        that:
-          - _direnv.rc == 0
-        fail_msg: "direnv is not installed"
-      when: ansible_facts.os_family == "Debian"
-
-    - name: Check argocd is installed
-      ansible.builtin.command:
-        cmd: argocd version --client --short
-      register: _argocd
-      changed_when: false
-
-    - name: Assert argocd version
-      ansible.builtin.assert:
-        that:
-          - (packages_argocd_version | regex_replace('^v', '')) in _argocd.stdout
-        fail_msg: "argocd version mismatch: expected {{ packages_argocd_version }}"
-
-    - name: Check flux is installed
-      ansible.builtin.command:
-        cmd: flux version --client
-      register: _flux
-      changed_when: false
-
-    - name: Assert flux version
-      ansible.builtin.assert:
-        that:
-          - (packages_flux_version | regex_replace('^v', '')) in _flux.stdout
-        fail_msg: "flux version mismatch: expected {{ packages_flux_version }}"
-
-    - name: Check kubeseal is installed
-      ansible.builtin.command:
-        cmd: kubeseal --version
-      register: _kubeseal
-      changed_when: false
-
-    - name: Assert kubeseal version
-      ansible.builtin.assert:
-        that:
-          - (packages_kubeseal_version | regex_replace('^v', '')) in _kubeseal.stdout
-        fail_msg: "kubeseal version mismatch: expected {{ packages_kubeseal_version }}"
-
-    - name: Check tkn is installed
-      ansible.builtin.command:
-        cmd: tkn version
-      register: _tkn
-      changed_when: false
-
-    - name: Assert tkn version
-      ansible.builtin.assert:
-        that:
-          - (packages_tkn_version | regex_replace('^v', '')) in _tkn.stdout
-        fail_msg: "tkn version mismatch: expected {{ packages_tkn_version }}"
-
-    - name: Check terraform is installed
-      ansible.builtin.command:
-        cmd: terraform version
-      register: _terraform
-      changed_when: false
-
-    - name: Assert terraform version
-      ansible.builtin.assert:
-        that:
-          - (packages_terraform_version | regex_replace('^v', '')) in _terraform.stdout
-        fail_msg: "terraform version mismatch: expected {{ packages_terraform_version }}"
-
-    - name: Check sops is installed
-      ansible.builtin.command:
-        cmd: sops --version
-      register: _sops
-      changed_when: false
-
-    - name: Assert sops version
-      ansible.builtin.assert:
-        that:
-          - (packages_sops_version | regex_replace('^v', '')) in _sops.stdout
-        fail_msg: "sops version mismatch: expected {{ packages_sops_version }}"
-
-    - name: Check oc is installed
-      ansible.builtin.command:
-        cmd: oc version --client
-      register: _oc
-      changed_when: false
-
-    - name: Assert oc reports a version
-      ansible.builtin.assert:
-        that:
-          - _oc.stdout | length > 0
-        fail_msg: "oc did not return a version string"
-
-    - name: Check kubeconform is installed
-      ansible.builtin.command:
-        cmd: kubeconform -v
-      register: _kubeconform
-      changed_when: false
-
-    - name: Assert kubeconform version
-      ansible.builtin.assert:
-        that:
-          - (packages_kubeconform_version | regex_replace('^v', '')) in _kubeconform.stdout
-        fail_msg: "kubeconform version mismatch: expected {{ packages_kubeconform_version }}"
-
-    - name: Check kube-burner is installed
-      ansible.builtin.command:
-        cmd: kube-burner version
-      register: _kube_burner
-      changed_when: false
-
-    - name: Assert kube-burner version
-      ansible.builtin.assert:
-        that:
-          - (packages_kube_burner_version | regex_replace('^v', '')) in _kube_burner.stdout
-        fail_msg: "kube-burner version mismatch: expected {{ packages_kube_burner_version }}"
-
-    - name: Check kube-burner-ocp is installed
-      ansible.builtin.command:
-        cmd: kube-burner-ocp version
-      register: _kube_burner_ocp
-      changed_when: false
-
-    - name: Assert kube-burner-ocp version
-      ansible.builtin.assert:
-        that:
-          - (packages_kube_burner_ocp_version | regex_replace('^v', '')) in _kube_burner_ocp.stdout
-        fail_msg: "kube-burner-ocp version mismatch: expected {{ packages_kube_burner_ocp_version }}"
-
-    - name: Check act is installed
-      ansible.builtin.command:
-        cmd: act --version
-      register: _act
-      changed_when: false
-
-    - name: Assert act version
-      ansible.builtin.assert:
-        that:
-          - (packages_act_version | regex_replace('^v', '')) in _act.stdout
-        fail_msg: "act version mismatch: expected {{ packages_act_version }}"
-
-    - name: Check mc is installed
-      ansible.builtin.command:
-        cmd: mc --version
-      register: _mc
-      changed_when: false
-
-    - name: Assert mc reports a version
-      ansible.builtin.assert:
-        that:
-          - _mc.stdout | length > 0
-        fail_msg: "mc did not return a version string"
-
-    - name: Check rclone is installed
-      ansible.builtin.command:
-        cmd: rclone version
-      register: _rclone
-      changed_when: false
-
-    - name: Assert rclone version
-      ansible.builtin.assert:
-        that:
-          - (packages_rclone_version | regex_replace('^v', '')) in _rclone.stdout
-        fail_msg: "rclone version mismatch: expected {{ packages_rclone_version }}"
+          - item.rc == 0
+          - item.stdout | length > 0
+        fail_msg: "{{ item.item }} did not return a version"
+      loop: "{{ _local_cli.results }}"
+      loop_control:
+        label: "{{ item.item }}"
 
     - name: Print verification summary
       ansible.builtin.debug:
         msg:
-          - "git: {{ _git.stdout }}"
-          - "devcontainer: {{ _devcontainer.stdout }}"
-          - "jq: {{ _jq.stdout }}"
-          - "make: {{ _make.stdout_lines[0] }}"
-          - "kubectl: {{ (_kubectl.stdout | from_json).clientVersion.gitVersion }}"
-          - "helm: {{ _helm.stdout }}"
-          - "kustomize: {{ _kustomize.stdout }}"
-          - "virtctl: {{ _virtctl.stdout_lines[0] }}"
-          - "argocd: {{ _argocd.stdout }}"
-          - "flux: {{ _flux.stdout_lines[0] }}"
-          - "kubeseal: {{ _kubeseal.stdout }}"
-          - "tkn: {{ _tkn.stdout_lines[0] }}"
-          - "terraform: {{ _terraform.stdout_lines[0] }}"
-          - "sops: {{ _sops.stdout }}"
-          - "oc: {{ _oc.stdout_lines[0] }}"
-          - "kubeconform: {{ _kubeconform.stdout }}"
-          - "kube-burner: {{ _kube_burner.stdout_lines[0] }}"
-          - "kube-burner-ocp: {{ _kube_burner_ocp.stdout_lines[0] }}"
-          - "act: {{ _act.stdout }}"
-          - "mc: {{ _mc.stdout_lines[0] }}"
-          - "rclone: {{ _rclone.stdout_lines[0] }}"
-          - "op: {{ _op.stdout }}"
-          - "gh: {{ _gh.stdout_lines[0] }}"
-          - "claude: {{ _claude.stdout }}"
-          - "agent: {{ _cursor_agent.stdout }}"
-          - "vim: {{ _vim.stdout_lines[0] }}"
-          - "tmux: {{ _tmux.stdout }}"
-          - "nmap: {{ _nmap.stdout_lines[0] }}"
-          - "rsync: {{ _rsync.stdout_lines[0] }}"
-          - "gpg: {{ _gpg.stdout_lines[0] }}"
-          - "node: {{ _node.stdout }}"
-          - "npm: {{ _npm.stdout }}"
-          - "ansible: {{ _ansible.stdout_lines[0] }}"
-          - "molecule: {{ _molecule.stdout_lines[0] }}"
-          - "yq: {{ _yq.stdout }}"
+          - "{{ _mise_symlinks.stdout }}"
+          - "all pinned mise tools installed at their locked versions"
+          - "{{ _packages_nonmise_cli | length }} non-mise CLIs resolve on PATH"
+          - "devcontainer/claude/agent report versions"

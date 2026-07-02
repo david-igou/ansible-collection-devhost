@@ -24,6 +24,8 @@ jobs:
     uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
   molecule:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # only needs to read the repo; GITHUB_TOKEN is for release-API rate limits
     strategy:
       fail-fast: false
       matrix:
@@ -48,6 +50,10 @@ jobs:
 
       - name: Smoke test molecule ${{ matrix.scenario }}
         run: molecule test -s ${{ matrix.scenario }}
+        env:
+          # mise install fetches many GitHub releases; the token raises the
+          # anonymous 60/hr API limit so the packages scenario doesn't rate-limit.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   all_green:
     if: ${{ always() }}

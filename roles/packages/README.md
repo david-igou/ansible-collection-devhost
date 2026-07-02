@@ -2,83 +2,55 @@
 
 System and user-level package installation for development hosts.
 
-Uses `become: true` for system packages, dispatches per-distro tasks via `ansible_facts.os_family` (Debian / RedHat).
+Uses `become: true` for system packages, dispatches per-distro tasks via `ansible_facts.os_family` (Debian / RedHat). CLI binaries are installed by **mise**, which is distro-agnostic — the same binaries on Debian and RedHat.
 
 ## What it does
 
-- Installs distro-specific system packages (Debian.yml / RedHat.yml)
-- Installs extra system packages configurable per distro
-- Installs a pinned Node.js version from the official tarball
-- Downloads versioned CLI binaries from GitHub releases (kubectl, helm, kustomize, virtctl, argocd, flux, kubeseal, tkn, terraform, sops, oc, kubeconform, kube-burner, kube-burner-ocp, act, mc, rclone)
-- Installs pip packages (ansible-core, ansible-navigator, molecule, etc.)
-- Installs devcontainer CLI via npm
-- Optionally installs Claude Code, Cursor agent CLI, GitHub CLI, and 1Password
+- Installs distro-specific system packages (Debian.yml / RedHat.yml) + a configurable extra package list.
+- Installs and **version-pins CLI tools via mise**, using **[igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** as the source of truth (fetched at `packages_mise_source_ref`): kubectl, helm, kustomize, virtctl, argocd, flux, kubeseal, tkn, terraform, sops, oc, kubeconform, kube-burner, kube-burner-ocp, act, rclone, gh, kind, direnv, age, code-server, and Node.js. The mise binary is installed from a GPG-pinned tarball; tools are verified per the fetched `mise.lock` (SHA256/blake3), SLSA/attestations, and GPG postinstall hooks for helm/terraform/oc; then symlinked into `/usr/local/bin`.
+- Installs pip packages (ansible-core, ansible-navigator, molecule, etc.).
+- Installs the devcontainer CLI via npm (uses Node.js from mise).
+- Optionally installs Claude Code, Cursor agent CLI, GitHub CLI, and 1Password.
 
 ## Role Variables
 
 ### Feature flags
 
-Each tool can be individually enabled or disabled:
-
 | Variable | Default | Description |
 |---|---|---|
-| `packages_install_onepassword` | `true` | Install 1Password CLI |
-| `packages_install_github_cli` | `true` | Install GitHub CLI |
+| `packages_install_cli_tools` | `true` | Install + version-pin the CLI tool set (and Node.js) via mise using igou-devenv's `mise.toml`/`mise.lock`. When false, a distro Node.js package is installed as a fallback so the devcontainer CLI still works |
+| `packages_install_onepassword` | `true` | Install 1Password CLI (distro repo) |
+| `packages_install_github_cli` | `true` | Install GitHub CLI (distro repo) |
 | `packages_install_claude_code` | `true` | Install Claude Code |
 | `packages_install_cursor_agent` | `true` | Install Cursor agent CLI |
-| `packages_install_kubectl` | `true` | Install kubectl |
-| `packages_install_helm` | `true` | Install Helm |
-| `packages_install_kustomize` | `true` | Install Kustomize |
-| `packages_install_virtctl` | `true` | Install virtctl (KubeVirt) |
-| `packages_install_argocd` | `true` | Install ArgoCD CLI |
-| `packages_install_flux` | `true` | Install Flux CLI |
-| `packages_install_kubeseal` | `true` | Install kubeseal (Sealed Secrets) |
-| `packages_install_tkn` | `true` | Install Tekton CLI |
-| `packages_install_terraform` | `true` | Install Terraform |
-| `packages_install_sops` | `true` | Install SOPS |
-| `packages_install_oc` | `true` | Install OpenShift CLI |
-| `packages_install_kubeconform` | `true` | Install kubeconform |
-| `packages_install_kube_burner` | `true` | Install kube-burner |
-| `packages_install_kube_burner_ocp` | `true` | Install kube-burner-ocp |
-| `packages_install_act` | `true` | Install act (local GitHub Actions runner) |
-| `packages_install_mc` | `true` | Install MinIO Client |
-| `packages_install_rclone` | `true` | Install rclone |
 | `packages_install_extra_packages` | `true` | Install extra system packages |
-| `packages_install_nodejs_pinned` | `true` | Install pinned Node.js |
 | `packages_install_pip_packages` | `true` | Install pip packages |
 
-### Version pins (Renovate-managed)
+### mise
 
 | Variable | Default | Description |
 |---|---|---|
-| `packages_nodejs_version` | `"v24.14.1"` | Node.js version |
-| `packages_devcontainer_cli_version` | `"0.85.0"` | devcontainer CLI version |
-| `packages_kubectl_version` | `"v1.35.3"` | kubectl version |
-| `packages_helm_version` | `"v4.1.3"` | Helm version |
-| `packages_kustomize_version` | `"v5.8.1"` | Kustomize version |
-| `packages_virtctl_version` | `"v1.8.0"` | virtctl version |
-| `packages_argocd_version` | `"v3.3.4"` | ArgoCD CLI version |
-| `packages_flux_version` | `"v2.8.3"` | Flux CLI version |
-| `packages_kubeseal_version` | `"v0.36.1"` | kubeseal version |
-| `packages_tkn_version` | `"v0.44.0"` | Tekton CLI version |
-| `packages_terraform_version` | `"v1.14.8"` | Terraform version |
-| `packages_sops_version` | `"v3.12.2"` | SOPS version |
-| `packages_oc_version` | `"latest"` | OpenShift CLI version |
-| `packages_kubeconform_version` | `"v0.7.0"` | kubeconform version |
-| `packages_kube_burner_version` | `"v2.4.2"` | kube-burner version |
-| `packages_kube_burner_ocp_version` | `"v1.11.4"` | kube-burner-ocp version |
-| `packages_act_version` | `"v0.2.84"` | act version |
-| `packages_rclone_version` | `"v1.73.2"` | rclone version |
+| `packages_mise_version` | `"v2026.6.11"` | mise binary version (GPG-pinned tarball; Renovate-managed) |
+| `packages_mise_gpg_fpr` | `24853EC9…A06D` | Pinned GPG fingerprint for the mise tarball |
+| `packages_mise_gpg_url` | `https://mise.jdx.dev/gpg-key.pub` | mise signing key URL |
+| `packages_mise_config_dir` | `/etc/mise` | Where the fetched `mise.toml`, `mise.lock`, and postinstall hooks are deployed |
+| `packages_mise_data_dir` | `/opt/mise` | mise tool data dir (`MISE_DATA_DIR`) |
+| `packages_mise_source_repo` | `igou-io/igou-devenv` | Repo providing the `mise.toml`/`mise.lock`/hooks source of truth |
+| `packages_mise_source_ref` | `7cbfb83…` (commit of `v2026.06.29`) | Immutable igou-devenv commit SHA to fetch; bump to advance the toolset |
+| `packages_github_token` | env `GITHUB_TOKEN` | Token for `mise install` (raises the GitHub API rate limit; strongly recommended) |
 
-### Package lists
+> **The CLI tool set + versions live in [igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** (the single source of truth), fetched at `packages_mise_source_ref`. Bump tool versions there — igou-devenv owns the `mise.lock` regeneration and the verification audit — and move the `packages_mise_source_ref` pin to a newer igou-devenv commit (SHA) to advance the host toolset. `gh` is part of that set, so while `cli_tools` is enabled the distro `gh` (`packages_install_github_cli`) is skipped — it is only installed as a fallback when `cli_tools` is disabled.
+
+### Other pins & lists
 
 | Variable | Default | Description |
 |---|---|---|
-| `packages_extra_packages_debian` | *(see defaults)* | Extra apt packages to install on Debian/Ubuntu |
-| `packages_extra_packages_redhat` | *(see defaults)* | Extra dnf packages to install on RHEL/CentOS |
-| `packages_pip_packages` | *(see defaults)* | Pip packages to install (Renovate-managed versions) |
-| `packages_pip_requirements` | `""` | Path to a pip requirements file (skipped when empty) |
+| `packages_devcontainer_cli_version` | `"0.85.0"` | devcontainer CLI version (npm) |
+| `packages_extra_packages_debian` | *(see defaults)* | Extra apt packages on Debian/Ubuntu |
+| `packages_extra_packages_redhat` | *(see defaults)* | Extra dnf packages on RHEL/CentOS |
+| `packages_pip_packages` | *(see defaults)* | Pip packages (Renovate-managed) |
+| `packages_pip_requirements` | `""` | Path/URL to a pip requirements file (skipped when empty) |
 
 ## Dependencies
 
-None.
+None (uses `community.general.npm` from the collection's declared dependencies).
