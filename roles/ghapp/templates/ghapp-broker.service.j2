@@ -25,7 +25,15 @@ Restart=on-failure
 RestartSec=2
 
 # Hardening: the only writable path is the runtime socket directory.
+{% if __ghapp_broker_selinux_active | default(false) | bool %}
+# NoNewPrivileges blocks the SELinux exec-domain transition, so it is dropped
+# when the broker is confined by the ghbroker_t domain — the SELinux type
+# enforcement (stronger, type-scoped) replaces this blanket flag. The rest of
+# the sandbox below still applies.
+NoNewPrivileges=false
+{% else %}
 NoNewPrivileges=true
+{% endif %}
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true

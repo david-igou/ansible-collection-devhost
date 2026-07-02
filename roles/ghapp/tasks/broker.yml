@@ -11,6 +11,21 @@
       ghapp_broker_private_key_content, and a non-empty
       ghapp_broker_policy.allowed_repos list.
 
+- name: Gather SELinux facts (gates the confinement block)
+  ansible.builtin.setup:
+    gather_subset:
+      - "!all"
+      - selinux
+  when: ansible_facts.selinux is not defined
+
+- name: Decide whether the SELinux confinement is active on this host
+  ansible.builtin.set_fact:
+    __ghapp_broker_selinux_active: >-
+      {{
+        (ghapp_broker_selinux_confine | bool)
+        and (ansible_facts.selinux.status | default('disabled') == 'enabled')
+      }}
+
 - name: Create the broker group
   ansible.builtin.group:
     name: "{{ ghapp_broker_group }}"
@@ -82,6 +97,68 @@
     mode: "0640"
   become: true
   notify: Restart the ghapp broker
+
+# On SELinux-enforcing hosts, run the broker in its own confined domain
+# (ghbroker_t) so the single cross-boundary grant — a confined agent container
+# connecting to the broker socket — is scoped to exactly this daemon and its
+# socket, rather than opening the container up (label=disable) or granting
+# connectto to a broad host type. Skipped where SELinux is not enabled
+# (Debian, molecule containers), so those paths are unchanged.
+- name: Configure the broker SELinux domain
+  when: __ghapp_broker_selinux_active | bool
+  become: true
+  block:
+    - name: Install SELinux policy build tooling
+      ansible.builtin.package:
+        name: "{{ ghapp_broker_selinux_build_packages }}"
+        state: present
+
+    - name: Check whether the ghbroker SELinux module is already loaded
+      ansible.builtin.command:
+        cmd: semodule -l
+      register: ghapp_broker_selinux_module_present
+      changed_when: false
+      failed_when: false
+      # noqa command-instead-of-module -- no module lists loaded SELinux policies
+
+    - name: Install the ghbroker SELinux policy source
+      ansible.builtin.copy:
+        src: ghbroker.te
+        dest: "{{ ghapp_broker_config_dir }}/ghbroker.te"
+        owner: root
+        group: root
+        mode: "0644"
+      register: __ghapp_broker_te
+
+    - name: Build and install the ghbroker SELinux module
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail;
+          make -f /usr/share/selinux/devel/Makefile ghbroker.pp
+          && semodule -i ghbroker.pp
+        chdir: "{{ ghapp_broker_config_dir }}"
+        executable: /bin/bash
+      register: __ghapp_broker_semodule
+      changed_when: true
+      when: >-
+        __ghapp_broker_te.changed
+        or 'ghbroker' not in ghapp_broker_selinux_module_present.stdout
+      notify: Restart the ghapp broker
+      # noqa command-instead-of-shell -- refpolicy build + module load, no module for it
+
+    - name: Label the ghapp binary as the broker domain entrypoint
+      community.general.sefcontext:
+        target: "{{ ghapp_venv_path }}/bin/ghapp"
+        setype: ghbroker_exec_t
+        state: present
+      notify: Restart the ghapp broker
+
+    - name: Restore the ghapp binary context
+      ansible.builtin.command:
+        cmd: "restorecon -v {{ ghapp_venv_path }}/bin/ghapp"
+      register: __ghapp_broker_restorecon
+      changed_when: __ghapp_broker_restorecon.stdout | length > 0
+      notify: Restart the ghapp broker
 
 - name: Render the broker systemd unit
   ansible.builtin.template:

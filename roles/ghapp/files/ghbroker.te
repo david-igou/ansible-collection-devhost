@@ -1,0 +1,44 @@
+policy_module(ghbroker, 1.2.0)
+
+require {
+    type container_t;
+    type var_run_t;
+    type cgroup_t;
+}
+
+########################################
+# Dedicated confined domain for the ghapp token broker daemon.
+type ghbroker_t;
+type ghbroker_exec_t;
+init_daemon_domain(ghbroker_t, ghbroker_exec_t)
+
+########################################
+# The broker's listening socket gets its own type so the cross-domain grant
+# to containers is scoped to exactly this socket, not all of /run.
+type ghbroker_sock_t;
+files_type(ghbroker_sock_t)
+
+type_transition ghbroker_t var_run_t:sock_file ghbroker_sock_t;
+allow ghbroker_t ghbroker_sock_t:sock_file manage_sock_file_perms;
+allow ghbroker_t var_run_t:dir { add_name remove_name write };
+
+########################################
+# Daemon runtime: exec its venv python, mint tokens over HTTPS to GitHub
+# (TLS certs, DNS, tcp/443), read cgroup limits.
+corecmd_exec_bin(ghbroker_t)
+files_exec_usr_files(ghbroker_t)
+# Python mmaps its interpreter (bin_t) and venv shared objects (usr_t).
+allow ghbroker_t bin_t:file map;
+allow ghbroker_t usr_t:file map;
+allow ghbroker_t self:tcp_socket create_stream_socket_perms;
+corenet_tcp_connect_http_port(ghbroker_t)
+sysnet_dns_name_resolve(ghbroker_t)
+miscfiles_read_generic_certs(ghbroker_t)
+allow ghbroker_t cgroup_t:dir search;
+allow ghbroker_t cgroup_t:file read;
+
+########################################
+# The one cross-boundary grant: confined Hermes terminal containers connect
+# to the broker over its socket. Scoped to ghbroker_t / ghbroker_sock_t only.
+allow container_t ghbroker_t:unix_stream_socket connectto;
+allow container_t ghbroker_sock_t:sock_file { getattr write };
