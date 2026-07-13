@@ -1,10 +1,4 @@
 ---
-- name: Ensure .gitconfig is absent
-  ansible.builtin.file:
-    path: "{{ ansible_facts.env.HOME }}/.gitconfig"
-    state: absent
-  when: host_prep_git_github_ssh_rewrite
-
 - name: Create bind-mount target directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -82,10 +76,3 @@
     scope: global
     value: "{{ host_prep_git_user_email }}"
   when: host_prep_git_user_email | length > 0
-
-- name: Configure GitHub SSH URL rewrite
-  community.general.git_config:
-    name: "url.git@github.com:.insteadOf"
-    scope: global
-    value: "https://github.com/"
-  when: host_prep_git_github_ssh_rewrite

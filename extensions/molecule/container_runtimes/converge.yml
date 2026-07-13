@@ -12,7 +12,6 @@
     packages_install_cursor_agent: true
     packages_install_pip_packages: false
     packages_install_extra_packages: false
-    host_prep_git_github_ssh_rewrite: false
     host_prep_git_user_name: "Test User"
     host_prep_git_user_email: "test@example.com"
     host_prep_ssh_config: |

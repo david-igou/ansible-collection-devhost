@@ -22,7 +22,6 @@
       # Test bashrc
       export EDITOR=vim
     host_prep_onepassword_service_account_token: "test-token-value"
-    host_prep_git_github_ssh_rewrite: false
     host_prep_devcontainer_repository: "https://github.com/igou-io/igou-devenv.git"
 
     # The repositories to clone into the workspace, cloned to {{ ansible_facts.env.HOME }}/workspace/
