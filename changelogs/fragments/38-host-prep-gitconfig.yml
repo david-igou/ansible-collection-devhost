@@ -1,7 +1,0 @@
----
-breaking_changes:
-  - host_prep role - The ``host_prep_git_github_ssh_rewrite`` variable and the GitHub
-    HTTPS-to-SSH URL rewrite (``url.git@github.com:.insteadOf``) it configured have
-    been removed. The role no longer deletes ``~/.gitconfig`` before configuring git;
-    it now only seeds the file and sets ``user.name`` / ``user.email`` idempotently
-    via ``community.general.git_config`` (https://github.com/david-igou/ansible-collection-devhost/pull/38).

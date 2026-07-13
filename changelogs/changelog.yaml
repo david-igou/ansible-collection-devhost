@@ -86,3 +86,29 @@ releases:
     fragments:
       - broker-selinux.yml
     release_date: '2026-07-02'
+  28.0.0:
+    changes:
+      breaking_changes:
+        - host_prep role - The ``host_prep_git_github_ssh_rewrite`` variable and the
+          GitHub HTTPS-to-SSH URL rewrite (``url.git@github.com:.insteadOf``) it configured
+          have been removed. The role no longer deletes ``~/.gitconfig`` before configuring
+          git; it now only seeds the file and sets ``user.name`` / ``user.email``
+          idempotently via ``community.general.git_config`` (https://github.com/david-igou/ansible-collection-devhost/pull/38).
+      bugfixes:
+        - ghapp role - Make the ``/opt/ghapp`` broker virtualenv readable and traversable
+          by the non-root service user. ``python3 -m venv`` honors the login umask,
+          so on a hardened host (``umask 0077``) the venv was created ``0700 root``
+          and the ``ghbroker`` service died with ``203/EXEC`` permission denied; a
+          recursive ``u=rwX,go=rX`` mode fix is now applied after venv creation (https://github.com/david-igou/ansible-collection-devhost/commit/cbfb70749fc712656654ff033e7ae90ef64edc8d).
+      release_summary: This major release of the ``david_igou.devhost`` collection
+        changes how the ``host_prep`` role manages git configuration. The role no
+        longer deletes ``~/.gitconfig`` and the GitHub HTTPS-to-SSH URL rewrite (along
+        with its ``host_prep_git_github_ssh_rewrite`` variable) has been removed;
+        git identity is now configured idempotently via ``community.general.git_config``.
+        The release also carries a bugfix for the ``ghapp`` broker virtualenv permissions
+        on hardened hosts.
+    fragments:
+      - 28.0.0.yml
+      - 38-host-prep-gitconfig.yml
+      - ghapp-broker-venv-perms.yml
+    release_date: '2026-07-13'
