@@ -20,7 +20,7 @@ Breaking Changes / Porting Guide
 Bugfixes
 --------
 
-- ghapp role - Make the ``/opt/ghapp`` broker virtualenv readable and traversable by the non-root service user. ``python3 -m venv`` honors the login umask, so on a hardened host (``umask 0077``) the venv was created ``0700 root`` and the ``ghbroker`` service died with ``203/EXEC`` permission denied; a recursive ``u=rwX,go=rX`` mode fix is now applied after venv creation (https://github.com/david-igou/ansible-collection-devhost/commit/cbfb70749fc712656654ff033e7ae90ef64edc8d).
+- ghapp role - Make the ``/opt/ghapp`` broker virtualenv readable and traversable by the non-root service user. ``python3 -m venv`` honors the login umask, so on a hardened host (``umask 0077``) the venv was created ``0700 root`` and the ``ghbroker`` service died with ``203/EXEC`` permission denied; a recursive ``u=rwX,go=rX`` mode fix is now applied after venv creation (``cbfb707``).
 
 v27.1.2
 =======
