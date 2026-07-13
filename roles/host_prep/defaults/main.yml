@@ -1,7 +1,6 @@
 ---
 host_prep_git_user_name: ""
 host_prep_git_user_email: ""
-host_prep_git_github_ssh_rewrite: true
 
 host_prep_directories:
   - "{{ ansible_facts.env.HOME }}/.ssh"
