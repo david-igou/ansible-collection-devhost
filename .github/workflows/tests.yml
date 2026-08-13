@@ -14,14 +14,14 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   changelog:
-    uses: ansible/ansible-content-actions/.github/workflows/changelog.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/changelog.yaml@dc47efd46c312b6ffaf10c274825707a65ac1d86 # main
     if: github.event_name == 'pull_request'
   build-import:
-    uses: ansible/ansible-content-actions/.github/workflows/build_import.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/build_import.yaml@dc47efd46c312b6ffaf10c274825707a65ac1d86 # main
   ansible-lint:
-    uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@dc47efd46c312b6ffaf10c274825707a65ac1d86 # main
   sanity:
-    uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@46de405af31ba872a770a9b75c90121493c1cbe5 # main
+    uses: ansible/ansible-content-actions/.github/workflows/sanity.yaml@dc47efd46c312b6ffaf10c274825707a65ac1d86 # main
   molecule:
     runs-on: ubuntu-latest
     permissions:
@@ -37,10 +37,10 @@ jobs:
           - ghapp
     steps:
       - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.14"
 
