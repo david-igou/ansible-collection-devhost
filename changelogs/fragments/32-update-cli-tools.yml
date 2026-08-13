@@ -1,0 +1,7 @@
+---
+minor_changes:
+  - >-
+    packages role - Bump pinned tool versions: ``ansible-navigator``,
+    ``ansible-lint``, and ``molecule`` to ``26.8.0``, and
+    ``@devcontainers/cli`` to ``0.88.0``
+    (https://github.com/david-igou/ansible-collection-devhost/pull/32).
