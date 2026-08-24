@@ -15,7 +15,13 @@ on: # yamllint disable-line rule:truthy
 jobs:
   changelog:
     uses: ansible/ansible-content-actions/.github/workflows/changelog.yaml@dc47efd46c312b6ffaf10c274825707a65ac1d86 # main
-    if: github.event_name == 'pull_request'
+    # Bot PRs can't author changelog fragments, and hand-adding one to a
+    # Renovate branch freezes Renovate ("PR Edited") — skip the gate for bots;
+    # all_green treats a skipped job as passing.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'renovate[bot]' &&
+      github.actor != 'dependabot[bot]'
   build-import:
     uses: ansible/ansible-content-actions/.github/workflows/build_import.yaml@dc47efd46c312b6ffaf10c274825707a65ac1d86 # main
   ansible-lint:
