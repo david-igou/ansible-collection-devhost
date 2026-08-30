@@ -16,7 +16,7 @@ packages_install_pip_packages: true
 # igou-devenv repo, which is the single source of truth — bump tool versions
 # there. The mise binary itself is installed from a GPG-pinned tarball.
 # renovate: datasource=github-releases depName=jdx/mise
-packages_mise_version: "v2026.6.11"
+packages_mise_version: "v2026.8.10"
 packages_mise_gpg_fpr: "24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
 packages_mise_gpg_url: "https://mise.jdx.dev/gpg-key.pub"
 packages_mise_config_dir: /etc/mise
@@ -130,27 +130,27 @@ packages_extra_packages_redhat:
 
 packages_pip_packages:
   # renovate: datasource=pypi depName=ansible-core
-  - "ansible-core==2.20.4"
+  - "ansible-core==2.21.3"
   # renovate: datasource=pypi depName=ansible-navigator
   - "ansible-navigator==26.8.0"
   # renovate: datasource=pypi depName=ansible-builder
   - "ansible-builder==3.1.1"
   # renovate: datasource=pypi depName=ansible-rulebook
-  - "ansible-rulebook==1.2.2"
+  - "ansible-rulebook==1.3.1"
   # renovate: datasource=pypi depName=ansible-runner
   - "ansible-runner==2.4.3"
   # renovate: datasource=pypi depName=ansible-lint
   - "ansible-lint==26.8.0"
   # renovate: datasource=pypi depName=ansible-creator
-  - "ansible-creator==26.4.0"
+  - "ansible-creator==26.8.0"
   # renovate: datasource=pypi depName=molecule
   - "molecule==26.8.0"
   # renovate: datasource=pypi depName=awxkit
   - "awxkit==24.6.1"
   # renovate: datasource=pypi depName=yq
-  - "yq==3.4.3"
+  - "yq==4.1.2"
   # renovate: datasource=pypi depName=kubernetes
-  - "kubernetes==35.0.0"
+  - "kubernetes==36.0.3"
   # renovate: datasource=pypi depName=jmespath
   - "jmespath==1.1.0"
 
