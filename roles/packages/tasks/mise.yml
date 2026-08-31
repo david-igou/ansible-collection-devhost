@@ -22,7 +22,10 @@
     # bundled node); minimal CentOS/RHEL images lack it, so node/npm fail to load.
     # make + a C++ toolchain: the devenv toolset's npm: backend tools (t3) carry
     # node-pty, which node-gyp compiles at install time.
-    name: "{{ ['tar', 'gzip', 'curl', 'make'] + (['gnupg2', 'libatomic', 'gcc-c++'] if ansible_facts.os_family == 'RedHat' else ['gnupg', 'libatomic1', 'g++']) }}"
+    name: >-
+      {{ ['tar', 'gzip', 'curl', 'make']
+         + (['gnupg2', 'libatomic', 'gcc-c++'] if ansible_facts.os_family == 'RedHat'
+            else ['gnupg', 'libatomic1', 'g++']) }}
     state: present
   become: true
 
