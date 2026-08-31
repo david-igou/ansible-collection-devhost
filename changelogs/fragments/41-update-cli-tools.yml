@@ -1,0 +1,21 @@
+---
+minor_changes:
+  - >-
+    packages role - Bump pinned tool versions: ``mise`` to ``v2026.8.10``,
+    ``ansible-core`` to ``2.21.3``, ``ansible-rulebook`` to ``1.3.1``,
+    ``ansible-creator`` to ``26.8.0``, ``yq`` to ``4.1.2``, and
+    ``kubernetes`` to ``36.0.3``
+    (https://github.com/david-igou/ansible-collection-devhost/pull/41).
+bugfixes:
+  - >-
+    packages role - Advance ``packages_mise_source_ref`` to an igou-devenv
+    commit whose ``mise.lock`` was regenerated under mise v2026.8.10:
+    mise >= 2026.8 hard-fails ``mise install`` when ``http:``-backend tools
+    are missing from the lockfile
+    (https://github.com/david-igou/ansible-collection-devhost/pull/41).
+  - >-
+    packages role - Install ``make`` and a C++ toolchain alongside the other
+    mise prerequisites: the devenv toolset now includes the ``npm:``-backend
+    ``t3`` tool, whose ``node-pty`` dependency is compiled by node-gyp at
+    install time
+    (https://github.com/david-igou/ansible-collection-devhost/pull/41).
