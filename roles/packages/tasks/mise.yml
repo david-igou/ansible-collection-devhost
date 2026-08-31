@@ -20,7 +20,9 @@
   ansible.builtin.package:
     # libatomic(1) is a runtime dep of mise's prebuilt Node.js (and code-server's
     # bundled node); minimal CentOS/RHEL images lack it, so node/npm fail to load.
-    name: "{{ ['tar', 'gzip', 'curl'] + (['gnupg2', 'libatomic'] if ansible_facts.os_family == 'RedHat' else ['gnupg', 'libatomic1']) }}"
+    # make + a C++ toolchain: the devenv toolset's npm: backend tools (t3) carry
+    # node-pty, which node-gyp compiles at install time.
+    name: "{{ ['tar', 'gzip', 'curl', 'make'] + (['gnupg2', 'libatomic', 'gcc-c++'] if ansible_facts.os_family == 'RedHat' else ['gnupg', 'libatomic1', 'g++']) }}"
     state: present
   become: true
 

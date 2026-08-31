@@ -13,3 +13,9 @@ bugfixes:
     mise >= 2026.8 hard-fails ``mise install`` when ``http:``-backend tools
     are missing from the lockfile
     (https://github.com/david-igou/ansible-collection-devhost/pull/41).
+  - >-
+    packages role - Install ``make`` and a C++ toolchain alongside the other
+    mise prerequisites: the devenv toolset now includes the ``npm:``-backend
+    ``t3`` tool, whose ``node-pty`` dependency is compiled by node-gyp at
+    install time
+    (https://github.com/david-igou/ansible-collection-devhost/pull/41).
