@@ -16,7 +16,7 @@ packages_install_pip_packages: true
 # igou-devenv repo, which is the single source of truth — bump tool versions
 # there. The mise binary itself is installed from a GPG-pinned tarball.
 # renovate: datasource=github-releases depName=jdx/mise
-packages_mise_version: "v2026.8.10"
+packages_mise_version: "v2026.9.12"
 packages_mise_gpg_fpr: "24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
 packages_mise_gpg_url: "https://mise.jdx.dev/gpg-key.pub"
 packages_mise_config_dir: /etc/mise
@@ -35,7 +35,7 @@ packages_github_token: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"
 
 # @devcontainers/cli (installed via npm; needs Node.js from mise or the fallback)
 # renovate: datasource=npm depName=@devcontainers/cli
-packages_devcontainer_cli_version: "0.88.0"
+packages_devcontainer_cli_version: "0.89.0"
 
 packages_extra_packages_debian:
   - python3-pip
@@ -134,7 +134,7 @@ packages_pip_packages:
   # renovate: datasource=pypi depName=ansible-core
   - "ansible-core==2.21.3"
   # renovate: datasource=pypi depName=ansible-navigator
-  - "ansible-navigator==26.8.0"
+  - "ansible-navigator==26.9.0"
   # renovate: datasource=pypi depName=ansible-builder
   - "ansible-builder==3.1.1"
   # renovate: datasource=pypi depName=ansible-rulebook
@@ -142,15 +142,15 @@ packages_pip_packages:
   # renovate: datasource=pypi depName=ansible-runner
   - "ansible-runner==2.4.3"
   # renovate: datasource=pypi depName=ansible-lint
-  - "ansible-lint==26.8.0"
+  - "ansible-lint==26.9.0"
   # renovate: datasource=pypi depName=ansible-creator
-  - "ansible-creator==26.8.0"
+  - "ansible-creator==26.9.0"
   # renovate: datasource=pypi depName=molecule
-  - "molecule==26.8.0"
+  - "molecule==26.9.0"
   # renovate: datasource=pypi depName=awxkit
   - "awxkit==24.6.1"
   # renovate: datasource=pypi depName=yq
-  - "yq==4.1.2"
+  - "yq==4.2.0"
   # renovate: datasource=pypi depName=kubernetes
   - "kubernetes==36.0.3"
   # renovate: datasource=pypi depName=jmespath
