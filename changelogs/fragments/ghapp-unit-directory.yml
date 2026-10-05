@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - ghapp - Created the systemd unit directory before rendering the broker unit on minimal hosts.
