@@ -160,6 +160,15 @@
       changed_when: __ghapp_broker_restorecon.stdout | length > 0
       notify: Restart the ghapp broker
 
+- name: Create the broker systemd unit directory
+  ansible.builtin.file:
+    path: /etc/systemd/system
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
 - name: Render the broker systemd unit
   ansible.builtin.template:
     src: ghapp-broker.service.j2
