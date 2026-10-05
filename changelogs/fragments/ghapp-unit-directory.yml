@@ -1,3 +1,5 @@
 ---
 bugfixes:
-  - ghapp - Created the systemd unit directory before rendering the broker unit on minimal hosts (https://github.com/david-igou/ansible-collection-devhost/pull/45).
+  - >-
+    ghapp - Created the systemd unit directory before rendering the broker unit on minimal hosts
+    (https://github.com/david-igou/ansible-collection-devhost/pull/45).
