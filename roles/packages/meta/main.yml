@@ -3,7 +3,7 @@ galaxy_info:
   role_name: packages
   author: David Igou
   description: System packages, third-party repos, and CLI binary installs
-  license: Apache-2.0
+  license: MIT
   min_ansible_version: "2.16"
   platforms:
     - name: Debian
