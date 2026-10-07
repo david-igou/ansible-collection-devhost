@@ -112,4 +112,4 @@ See the [changelog fragments](changelogs/fragments/) for upcoming changes, or th
 
 ## License
 
-GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE).

@@ -6,7 +6,7 @@ galaxy_info:
     Runtime-minted, repo-scoped GitHub App tokens: installs the ghapp
     CLI/credential helper and optionally deploys the unix-socket token broker
     for containerized agent execution.
-  license: Apache-2.0
+  license: MIT
   min_ansible_version: "2.16"
   platforms:
     - name: Debian

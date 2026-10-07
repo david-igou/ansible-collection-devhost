@@ -7,7 +7,8 @@ authors:
   - David Igou
 
 description: Ansible collection for provisioning a bare Linux host for VS Code/Cursor remote server and devcontainer workflows.
-license_file: LICENSE
+license:
+  - MIT
 
 tags:
   - linux

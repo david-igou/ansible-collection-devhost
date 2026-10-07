@@ -3,7 +3,7 @@ galaxy_info:
   role_name: podman
   author: David Igou
   description: Podman host configuration including kernel tuning, user namespace setup, and socket activation
-  license: Apache-2.0
+  license: MIT
   min_ansible_version: "2.16"
   platforms:
     - name: Debian
