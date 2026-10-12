@@ -150,7 +150,7 @@ packages_pip_packages:
   # renovate: datasource=pypi depName=awxkit
   - "awxkit==24.6.1"
   # renovate: datasource=pypi depName=yq
-  - "yq==4.2.0"
+  - "yq==4.4.0"
   # renovate: datasource=pypi depName=kubernetes
   - "kubernetes==36.0.3"
   # renovate: datasource=pypi depName=jmespath
