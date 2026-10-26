@@ -1,0 +1,60 @@
+---
+- name: Assemble the managed Python environment
+  ansible.builtin.set_fact:
+    __packages_python_env:
+      MISE_DATA_DIR: "{{ packages_mise_data_dir }}"
+      MISE_GLOBAL_CONFIG_FILE: /etc/mise-python/mise.toml
+      MISE_SYSTEM_CONFIG_FILE: /etc/mise-python/mise.toml
+      MISE_TRUSTED_CONFIG_PATHS: /etc/mise-python/mise.toml
+
+- name: Create the managed Python configuration directory
+  ansible.builtin.file:
+    path: /etc/mise-python
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Install the locked Python manifest
+  ansible.builtin.copy:
+    src: "python/{{ item }}"
+    dest: "/etc/mise-python/{{ item }}"
+    mode: "0644"
+  loop:
+    - mise.toml
+    - mise.lock
+  become: true
+
+- name: Check for a missing managed Python runtime
+  ansible.builtin.command:
+    cmd: /usr/local/bin/mise ls --missing --json
+  environment: "{{ __packages_python_env }}"
+  register: __packages_python_missing
+  changed_when: false
+  become: true
+
+- name: Install Python 3.14 from the verified lockfile
+  ansible.builtin.command:
+    cmd: /usr/local/bin/mise install --yes
+  environment: "{{ __packages_python_env | combine({'GITHUB_TOKEN': packages_github_token | default('', true)}) }}"
+  register: __packages_python_install
+  changed_when: (__packages_python_missing.stdout | from_json | length) > 0
+  no_log: true
+  become: true
+
+- name: Resolve the locked Python interpreter
+  ansible.builtin.command:
+    cmd: /usr/local/bin/mise which python
+  environment: "{{ __packages_python_env }}"
+  register: __packages_python_path
+  changed_when: false
+  become: true
+
+- name: Create the Python 3.14 tool environment
+  ansible.builtin.command:
+    argv:
+      - "{{ __packages_python_path.stdout }}"
+      - -m
+      - venv
+      - /opt/devhost-python
+    creates: /opt/devhost-python/bin/python
+  become: true

@@ -28,6 +28,21 @@
       MISE_TRUSTED_CONFIG_PATHS: /etc/mise/mise.toml
 
   tasks:
+    - name: Verify the managed Python runtime and pip tool environment
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/python3
+          - -c
+          - "import sys; assert sys.version_info[:2] == (3, 14); assert sys.prefix == '/opt/devhost-python'"
+      changed_when: false
+
+    - name: Verify Ansible uses Python 3.14
+      ansible.builtin.command:
+        cmd: /usr/local/bin/ansible --version
+      register: _packages_ansible_version
+      changed_when: false
+      failed_when: "'python version = 3.14.' not in _packages_ansible_version.stdout"
+
     - name: Query mise for any pinned tool that is not installed
       ansible.builtin.command:
         cmd: /usr/local/bin/mise ls --missing
