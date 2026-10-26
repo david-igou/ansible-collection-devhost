@@ -30,13 +30,13 @@ Uses `become: true` for system packages, dispatches per-distro tasks via `ansibl
 
 | Variable | Default | Description |
 |---|---|---|
-| `packages_mise_version` | `"v2026.6.11"` | mise binary version (GPG-pinned tarball; Renovate-managed) |
+| `packages_mise_version` | `"v2026.10.11"` | mise binary version (GPG-pinned tarball; Renovate-managed) |
 | `packages_mise_gpg_fpr` | `24853EC9…A06D` | Pinned GPG fingerprint for the mise tarball |
 | `packages_mise_gpg_url` | `https://mise.jdx.dev/gpg-key.pub` | mise signing key URL |
 | `packages_mise_config_dir` | `/etc/mise` | Where the fetched `mise.toml`, `mise.lock`, and postinstall hooks are deployed |
 | `packages_mise_data_dir` | `/opt/mise` | mise tool data dir (`MISE_DATA_DIR`) |
 | `packages_mise_source_repo` | `igou-io/igou-devenv` | Repo providing the `mise.toml`/`mise.lock`/hooks source of truth |
-| `packages_mise_source_ref` | `7cbfb83…` (commit of `v2026.06.29`) | Immutable igou-devenv commit SHA to fetch; bump to advance the toolset |
+| `packages_mise_source_ref` | `5074461…` | Immutable igou-devenv commit SHA to fetch; bump to advance the toolset |
 | `packages_github_token` | env `GITHUB_TOKEN` | Token for `mise install` (raises the GitHub API rate limit; strongly recommended) |
 
 > **The CLI tool set + versions live in [igou-devenv](https://github.com/igou-io/igou-devenv)'s `mise.toml` + `mise.lock`** (the single source of truth), fetched at `packages_mise_source_ref`. Bump tool versions there — igou-devenv owns the `mise.lock` regeneration and the verification audit — and move the `packages_mise_source_ref` pin to a newer igou-devenv commit (SHA) to advance the host toolset. `gh` is part of that set, so while `cli_tools` is enabled the distro `gh` (`packages_install_github_cli`) is skipped — it is only installed as a fallback when `cli_tools` is disabled.
@@ -54,3 +54,5 @@ Uses `become: true` for system packages, dispatches per-distro tasks via `ansibl
 ## Dependencies
 
 None (uses `community.general.npm` from the collection's declared dependencies).
+
+Python tooling runs in `/opt/devhost-python` on locked Python 3.14.8. The role exposes its commands through `/usr/local/bin`, preserving the distro interpreter for OS utilities. Python downloads are checksum pinned and verified with GitHub attestations in `files/python/mise.lock`.

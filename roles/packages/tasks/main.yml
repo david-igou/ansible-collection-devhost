@@ -5,20 +5,41 @@
     - name: Include distro-specific package tasks
       ansible.builtin.include_tasks: "{{ ansible_facts.os_family }}.yml"
 
-# CLI binaries (kubectl, helm, oc, ... + Node.js) are installed and version-pinned
-# by mise from igou-devenv's fetched mise.toml. This is distro-agnostic — the same
-# binaries on Debian and RedHat — so it replaces the per-tool get_url/unarchive tasks.
-- name: Install CLI tools via mise
-  ansible.builtin.include_tasks: mise.yml
-  when: packages_install_cli_tools | bool
+- name: Bootstrap mise for managed CLI tools and Python
+  ansible.builtin.include_tasks: mise-bootstrap.yml
+  when: packages_install_cli_tools | bool or packages_install_pip_packages | bool
+
+- name: Install the managed Python runtime
+  ansible.builtin.include_tasks: python.yml
+  when: packages_install_pip_packages | bool
+
+- name: Preserve virtual environment discovery for the default Python command
+  ansible.builtin.copy:
+    dest: /usr/local/bin/python3
+    content: |
+      #!/bin/sh
+      exec /opt/devhost-python/bin/python "$@"
+    mode: "0755"
+    follow: false
+  become: true
+  when: packages_install_pip_packages | bool
+
+- name: Expose the managed Python command aliases
+  ansible.builtin.file:
+    src: /usr/local/bin/python3
+    dest: "/usr/local/bin/{{ item }}"
+    state: link
+    force: true
+  loop:
+    - python
+    - python3.14
+  become: true
+  when: packages_install_pip_packages | bool
 
 - name: Install pip packages
   ansible.builtin.pip:
     name: "{{ packages_pip_packages }}"
-    # --ignore-installed: on PEP668/externally-managed distros (Debian) several deps
-    # (e.g. pathspec) are apt-provided without pip RECORD files, so pip cannot
-    # upgrade them; installing fresh avoids "Cannot uninstall ... RECORD not found".
-    extra_args: --break-system-packages --ignore-installed
+    executable: /opt/devhost-python/bin/pip
   become: true
   when:
     - packages_install_pip_packages
@@ -39,8 +60,25 @@
     - name: Install pip packages from requirements file
       ansible.builtin.pip:
         requirements: "{{ '/tmp/pip-requirements.txt' if packages_pip_requirements is match('https?://') else packages_pip_requirements }}"
-        extra_args: --break-system-packages --ignore-installed
+        executable: /opt/devhost-python/bin/pip
       become: true
+
+- name: Expose managed Python tools on PATH
+  ansible.builtin.shell:
+    executable: /usr/bin/bash
+    cmd: |
+      set -euo pipefail
+      find /opt/devhost-python/bin -maxdepth 1 -executable -type f -exec ln -sf {} /usr/local/bin/ \;
+  changed_when: false
+  become: true
+  when: packages_install_pip_packages | bool
+
+# CLI binaries (kubectl, helm, oc, ... + Node.js) are installed and version-pinned
+# by mise from igou-devenv's fetched mise.toml. This is distro-agnostic — the same
+# binaries on Debian and RedHat — so it replaces the per-tool get_url/unarchive tasks.
+- name: Install CLI tools via mise
+  ansible.builtin.include_tasks: mise.yml
+  when: packages_install_cli_tools | bool
 
 - name: Configure npm prefix for user-level global installs
   ansible.builtin.command:

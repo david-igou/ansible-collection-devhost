@@ -6,7 +6,7 @@ argument_specs:
       - Installs core packages (git, jq, make, curl) via the distro package manager.
       - Configures optional third-party repositories (1Password, GitHub CLI).
       - Installs and version-pins CLI tools (kubectl, helm, oc, ... and Node.js) via mise, fetched from igou-devenv.
-      - Installs pip packages and the npm-based devcontainer CLI, and the Claude Code / Cursor agent CLIs.
+      - Installs pip tools in an isolated Python 3.14 environment, plus the npm-based devcontainer CLI and agent CLIs.
     options:
       packages_install_cli_tools:
         type: bool
@@ -46,10 +46,10 @@ argument_specs:
         type: bool
         default: true
         description: >-
-          Install the pip packages listed in packages_pip_packages.
+          Install the pip packages listed in packages_pip_packages in an isolated Python 3.14 environment.
       packages_mise_version:
         type: str
-        default: "v2026.6.11"
+        default: "v2026.10.11"
         description: >-
           Version of the mise binary to install (from a GPG-pinned tarball).
       packages_mise_gpg_fpr:
@@ -79,7 +79,7 @@ argument_specs:
           GitHub repo providing the mise.toml/mise.lock/aqua-registry source of truth.
       packages_mise_source_ref:
         type: str
-        default: "7cbfb83e54cb0735c17d880237003971365e0ecf"
+        default: "50744618d74394a925ac4752ed72aec7d26bffb5"
         description: >-
           Immutable git ref (commit SHA recommended) of packages_mise_source_repo to fetch the mise config + lock from.
       packages_mise_source_base:

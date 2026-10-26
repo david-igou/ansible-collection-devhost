@@ -11,6 +11,14 @@
   "minimumReleaseAge": "10 days",
   "packageRules": [
     {
+      "description": "Managed Python environments stay on the supported 3.14 series; review a minor upgrade explicitly.",
+      "matchDepNames": [
+        "python",
+        "cpython"
+      ],
+      "allowedVersions": ">=3.14 <3.15"
+    },
+    {
       "matchUpdateTypes": ["patch"],
       "enabled": false
     },

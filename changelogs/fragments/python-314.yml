@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - packages - installed Python tooling in a Python 3.14 virtual environment, with a verified portable runtime and commands on PATH.
