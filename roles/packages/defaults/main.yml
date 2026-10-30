@@ -150,8 +150,6 @@ packages_pip_packages:
   - "ansible-creator==26.9.0"
   # renovate: datasource=pypi depName=molecule
   - "molecule==26.9.0"
-  # renovate: datasource=pypi depName=awxkit
-  - "awxkit==24.6.1"
   # renovate: datasource=pypi depName=yq
   - "yq==4.4.0"
   # renovate: datasource=pypi depName=kubernetes
