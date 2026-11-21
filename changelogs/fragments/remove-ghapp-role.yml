@@ -1,0 +1,6 @@
+---
+removed_features:
+  - >-
+    ghapp - Removed the role and its Molecule scenario. Devenv hosts
+    authenticate to GitHub with the gh CLI login, and in-cluster agents use
+    their own broker deployment, so the role has no remaining consumers.

@@ -117,7 +117,7 @@ Do **not** remove the `verify` step from `molecule.yml` test sequences.
 
 ### CI scenarios
 
-CI runs the `host_prep`, `packages`, `docker`, `podman`, and `ghapp` scenarios. `default` is available locally but excluded from CI.
+CI runs the `host_prep`, `packages`, `docker`, and `podman` scenarios. `default` is available locally but excluded from CI.
 
 ## Coding standards
 
