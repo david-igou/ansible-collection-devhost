@@ -112,3 +112,47 @@ releases:
       - 38-host-prep-gitconfig.yml
       - ghapp-broker-venv-perms.yml
     release_date: '2026-07-13'
+  29.0.0:
+    changes:
+      bugfixes:
+        - 'packages role - Advance ``packages_mise_source_ref`` to an igou-devenv
+          commit whose ``mise.lock`` was regenerated under mise v2026.8.10: mise >=
+          2026.8 hard-fails ``mise install`` when ``http:``-backend tools are missing
+          from the lockfile (https://github.com/david-igou/ansible-collection-devhost/pull/41).'
+        - 'packages role - Install ``make`` and a C++ toolchain alongside the other
+          mise prerequisites: the devenv toolset now includes the ``npm:``-backend
+          ``t3`` tool, whose ``node-pty`` dependency is compiled by node-gyp at install
+          time (https://github.com/david-igou/ansible-collection-devhost/pull/41).'
+      minor_changes:
+        - Standardized the collection license and license metadata on MIT (https://github.com/david-igou/ansible-collection-devhost/pull/46).
+        - packages - installed Python tooling in a Python 3.14 virtual environment,
+          with a verified portable runtime and commands on PATH.
+        - 'packages role - Bump pinned tool versions: ``ansible-navigator``, ``ansible-lint``,
+          and ``molecule`` to ``26.8.0``, and ``@devcontainers/cli`` to ``0.88.0``
+          (https://github.com/david-igou/ansible-collection-devhost/pull/32).'
+        - 'packages role - Bump pinned tool versions: ``mise`` to ``v2026.8.10``,
+          ``ansible-core`` to ``2.21.3``, ``ansible-rulebook`` to ``1.3.1``, ``ansible-creator``
+          to ``26.8.0``, ``yq`` to ``4.1.2``, and ``kubernetes`` to ``36.0.3`` (https://github.com/david-igou/ansible-collection-devhost/pull/41).'
+        - packages role - Removed the unused awxkit client from the default Python
+          toolset.
+      release_summary: 'This major release of the ``david_igou.devhost`` collection
+        removes the ``ghapp`` role, because devenv hosts now authenticate to GitHub
+        with the gh CLI login. The ``packages`` role moves its Python tooling to a
+        Python 3.14 virtual environment, drops the unused awxkit client, and bumps
+        its pinned tool versions. The collection is now licensed under MIT.
+
+        '
+      removed_features:
+        - ghapp - Removed the role and its Molecule scenario. Devenv hosts authenticate
+          to GitHub with the gh CLI login, and in-cluster agents use their own broker
+          deployment, so the role has no remaining consumers.
+    fragments:
+      - 29.0.0.yml
+      - 32-update-cli-tools.yml
+      - 41-update-cli-tools.yml
+      - mit-license.yml
+      - python-314.yml
+      - remove-awxkit.yml
+      - remove-ghapp-role.yml
+      - security-hardening.yml
+    release_date: '2026-11-22'

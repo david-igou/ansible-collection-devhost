@@ -1,4 +1,0 @@
----
-minor_changes:
-  - packages role - Removed the unused awxkit client from the default Python
-    toolset.
