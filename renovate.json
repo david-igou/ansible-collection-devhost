@@ -31,7 +31,7 @@
       "groupName": "container base images"
     },
     {
-      "matchManagers": ["regex"],
+      "matchManagers": ["custom.regex"],
       "groupName": "cli tools"
     },
     {
@@ -41,6 +41,11 @@
     {
       "matchManagers": ["npm"],
       "groupName": "npm dependencies"
+    },
+    {
+      "description": "Commit pins carry no release timestamp; follow igou-devenv main as it lands.",
+      "matchDatasources": ["git-refs"],
+      "minimumReleaseAge": null
     }
   ],
   "customManagers": [
@@ -61,6 +66,18 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s+-\\s+\"\\S+=+(?<currentValue>[^\"]+)\""
       ],
       "versioningTemplate": "pep440"
+    },
+    {
+      "description": "Advance the igou-devenv mise.toml/mise.lock source pin (the mise binary version follows it)",
+      "customType": "regex",
+      "managerFilePatterns": ["roles/packages/defaults/main.yml"],
+      "matchStrings": [
+        "packages_mise_source_ref:\\s+\"(?<currentDigest>[0-9a-f]{40})\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "igou-devenv",
+      "packageNameTemplate": "https://github.com/igou-io/igou-devenv",
+      "currentValueTemplate": "main"
     }
   ]
 }

@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - packages role - The mise binary version now defaults to the ``MISE_VERSION``
+    igou-devenv pins at ``packages_mise_source_ref``, so it always matches the
+    fetched ``mise.lock``; Renovate advances the source ref to igou-devenv main.
