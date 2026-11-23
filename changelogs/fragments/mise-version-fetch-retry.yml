@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - packages role - Retry the igou-devenv Dockerfile fetch that resolves the mise version, so a transient GitHub 5xx does not fail the run.
