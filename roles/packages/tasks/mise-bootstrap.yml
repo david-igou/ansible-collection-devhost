@@ -28,6 +28,9 @@
     url: "{{ packages_mise_source_base }}/.devcontainer/Dockerfile"
     return_content: true
   register: __packages_mise_dockerfile
+  until: __packages_mise_dockerfile is succeeded
+  retries: 5
+  delay: 10
   when: not packages_mise_version
 
 - name: Resolve the mise binary version
