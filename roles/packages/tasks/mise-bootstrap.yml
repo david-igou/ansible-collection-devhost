@@ -23,6 +23,19 @@
     state: present
   become: true
 
+- name: Read the mise version igou-devenv pins at packages_mise_source_ref
+  ansible.builtin.uri:
+    url: "{{ packages_mise_source_base }}/.devcontainer/Dockerfile"
+    return_content: true
+  register: __packages_mise_dockerfile
+  when: not packages_mise_version
+
+- name: Resolve the mise binary version
+  ansible.builtin.set_fact:
+    __packages_mise_version: >-
+      {{ packages_mise_version
+         or __packages_mise_dockerfile.content | regex_search('(?<=^ARG MISE_VERSION=")v[^"]+', multiline=True) }}
+
 - name: Check installed mise version
   ansible.builtin.command:
     cmd: mise --version
@@ -50,10 +63,10 @@
       tar -xz --strip-components=2 -C /usr/local/bin -f "$tarball" mise/bin/mise
       chmod +x /usr/local/bin/mise
   environment:
-    MISE_VER: "{{ packages_mise_version }}"
+    MISE_VER: "{{ __packages_mise_version }}"
     MISE_ARCH: "{{ __packages_mise_arch }}"
     MISE_GPG_URL: "{{ packages_mise_gpg_url }}"
     MISE_GPG_FPR: "{{ packages_mise_gpg_fpr }}"
   become: true
   changed_when: true
-  when: (packages_mise_version | regex_replace('^v', '')) not in (__packages_mise_check.stdout | default(''))
+  when: (__packages_mise_version | regex_replace('^v', '')) not in (__packages_mise_check.stdout | default(''))

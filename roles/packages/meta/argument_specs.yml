@@ -49,9 +49,10 @@ argument_specs:
           Install the pip packages listed in packages_pip_packages in an isolated Python 3.14 environment.
       packages_mise_version:
         type: str
-        default: "v2026.10.11"
+        default: ""
         description: >-
-          Version of the mise binary to install (from a GPG-pinned tarball).
+          Version of the mise binary to install (from a GPG-pinned tarball). Empty uses the
+          MISE_VERSION that igou-devenv's Dockerfile pins at packages_mise_source_ref.
       packages_mise_gpg_fpr:
         type: str
         default: "24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
@@ -79,7 +80,7 @@ argument_specs:
           GitHub repo providing the mise.toml/mise.lock/aqua-registry source of truth.
       packages_mise_source_ref:
         type: str
-        default: "50744618d74394a925ac4752ed72aec7d26bffb5"
+        default: "d28db8083aa54f474fd1cd2aa586ef83d45ed15d"
         description: >-
           Immutable git ref (commit SHA recommended) of packages_mise_source_repo to fetch the mise config + lock from.
       packages_mise_source_base:
