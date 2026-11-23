@@ -1,0 +1,3 @@
+---
+trivial:
+  - renovate - Exempt digest updates from the release-age gate, matching renovate-base.json.

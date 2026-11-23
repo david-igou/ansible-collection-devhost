@@ -43,8 +43,8 @@
       "groupName": "npm dependencies"
     },
     {
-      "description": "Commit pins carry no release timestamp; follow igou-devenv main as it lands.",
-      "matchDatasources": ["git-refs"],
+      "description": "Digest updates (action SHAs, the igou-devenv commit pin) carry no release timestamp, so the age gate would pend forever. Matches renovate-base.json.",
+      "matchUpdateTypes": ["digest", "pinDigest"],
       "minimumReleaseAge": null
     }
   ],
