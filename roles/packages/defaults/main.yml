@@ -37,7 +37,7 @@ packages_github_token: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"
 
 # @devcontainers/cli (installed via npm; needs Node.js from mise or the fallback)
 # renovate: datasource=npm depName=@devcontainers/cli
-packages_devcontainer_cli_version: "0.89.0"
+packages_devcontainer_cli_version: "0.90.0"
 
 packages_extra_packages_debian:
   - python3-pip
@@ -136,25 +136,25 @@ packages_pip_packages:
   # renovate: datasource=pypi depName=netaddr
   - "netaddr==1.3.0"
   # renovate: datasource=pypi depName=ansible-core
-  - "ansible-core==2.21.3"
+  - "ansible-core==2.22.0"
   # renovate: datasource=pypi depName=ansible-navigator
-  - "ansible-navigator==26.9.0"
+  - "ansible-navigator==26.11.0"
   # renovate: datasource=pypi depName=ansible-builder
-  - "ansible-builder==3.1.1"
+  - "ansible-builder==3.2.0"
   # renovate: datasource=pypi depName=ansible-rulebook
   - "ansible-rulebook==1.3.1"
   # renovate: datasource=pypi depName=ansible-runner
   - "ansible-runner==2.4.3"
   # renovate: datasource=pypi depName=ansible-lint
-  - "ansible-lint==26.9.0"
+  - "ansible-lint==26.11.0"
   # renovate: datasource=pypi depName=ansible-creator
-  - "ansible-creator==26.9.0"
+  - "ansible-creator==26.11.0"
   # renovate: datasource=pypi depName=molecule
-  - "molecule==26.9.0"
+  - "molecule==26.11.0"
   # renovate: datasource=pypi depName=yq
   - "yq==4.4.0"
   # renovate: datasource=pypi depName=kubernetes
-  - "kubernetes==36.0.3"
+  - "kubernetes==37.0.2"
   # renovate: datasource=pypi depName=jmespath
   - "jmespath==1.1.0"
 
